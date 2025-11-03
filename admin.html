@@ -24,7 +24,7 @@
           <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-project-diagram"></i></a></li>
           <li><a class="nav-link nav-icon active" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
           <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button></li>
-          <li><button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button></li>
+          <li><button id="btn-logout" onclick="sessionStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button></li>
         </ul>
       </div>
     </div>
@@ -95,6 +95,7 @@
                 <select id="scrape-mode" class="form-select form-select-sm" style="width:200px">
                   <option value="demo">Demo (no external calls)</option>
                   <option value="headless">Headless + Proxy</option>
+                  <option value="python-httpx">Smartproxy HTTPX (Python)</option>
                 </select>
                 <input id="scrape-filename" class="form-control form-control-sm" style="width:200px" placeholder="Filename (e.g., zillow.csv)">
                 <button id="scrape-run" class="btn btn-primary btn-sm">Scrape & Load</button>
@@ -133,14 +134,24 @@
                   </div>
                   <div class="row g-2 mt-1">
                     <div class="col-12 col-md-4"><input id="proxy-endpoint" class="form-control form-control-sm" placeholder="http://gate.smartproxy.com:7000"></div>
-                    <div class="col-6 col-md-3"><input id="proxy-user" class="form-control form-control-sm" placeholder="username"></div>
-                    <div class="col-6 col-md-3"><input id="proxy-pass" type="password" class="form-control form-control-sm" placeholder="password"></div>
+                    <div class="col-6 col-md-3"><input id="proxy-user" autocomplete="off" class="form-control form-control-sm" placeholder="username"></div>
+                    <div class="col-6 col-md-3"><input id="proxy-pass" type="password" autocomplete="off" class="form-control form-control-sm" placeholder="password"></div>
                     <div class="col-12 col-md-2">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="proxy-rotate" checked>
                         <label class="form-check-label" for="proxy-rotate">Rotate</label>
                       </div>
                     </div>
+                  </div>
+                  <div class="row g-2 mt-1">
+                    <div class="col-12 col-md-6">
+                      <textarea id="zillow-url" class="form-control form-control-sm" rows="2" placeholder="Zillow property URL(s). For multiple, separate by comma or newline."></textarea>
+                    </div>
+                    <div class="col-6 col-md-3"><input id="zillow-zguid" type="password" autocomplete="off" class="form-control form-control-sm" placeholder="zguid"></div>
+                    <div class="col-6 col-md-3"><input id="zillow-jsess" type="password" autocomplete="off" class="form-control form-control-sm" placeholder="JSESSIONID"></div>
+                  </div>
+                  <div class="row g-2 mt-1">
+                    <div class="col-6 col-md-3"><input id="py-delay-ms" type="number" min="0" step="50" class="form-control form-control-sm" placeholder="Delay ms (e.g., 500)"></div>
                   </div>
                 </div>
               </div>
@@ -223,7 +234,7 @@
   <script>
     const mainEl = document.querySelector('main');
     const gateEl = document.getElementById('admin-gate');
-    if (!localStorage.getItem('adminLoggedIn')) {
+    if (!sessionStorage.getItem('adminLoggedIn')) {
       if (mainEl) mainEl.style.display = 'none';
       if (gateEl) gateEl.style.display = 'block';
     }
@@ -231,7 +242,7 @@
       const pin = (document.getElementById('admin-pin')?.value || '').trim();
       const err = document.getElementById('admin-pin-error');
       if (pin === '1381'){
-        localStorage.setItem('adminLoggedIn','1');
+        sessionStorage.setItem('adminLoggedIn','1');
         if (err) err.style.display = 'none';
         if (gateEl) gateEl.style.display = 'none';
         if (mainEl) mainEl.style.display = '';
@@ -241,6 +252,20 @@
     }
     document.getElementById('admin-enter')?.addEventListener('click', tryUnlock);
     document.getElementById('admin-pin')?.addEventListener('keypress', (e)=>{ if (e.key==='Enter') tryUnlock(); });
+    (function(){
+      const sensitive=['zillow-zguid','zillow-jsess','proxy-user','proxy-pass'];
+      const btn=document.getElementById('btn-logout');
+      if (btn) btn.addEventListener('click', ()=>{ sensitive.forEach(k=>sessionStorage.removeItem(k)); sessionStorage.removeItem('adminLoggedIn'); });
+      window.addEventListener('beforeunload', ()=>{ sensitive.forEach(k=>sessionStorage.removeItem(k)); sessionStorage.removeItem('adminLoggedIn'); });
+      let idleTimer;
+      const MAX_IDLE_MS = 10*60*1000;
+      function resetIdle(){
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(()=>{ sessionStorage.removeItem('adminLoggedIn'); sensitive.forEach(k=>sessionStorage.removeItem(k)); location.reload(); }, MAX_IDLE_MS);
+      }
+      ['click','keypress','mousemove','scroll','touchstart'].forEach(ev=>window.addEventListener(ev, resetIdle, {passive:true}));
+      resetIdle();
+    })();
 
     function clamp01(x){ return Math.max(0, Math.min(1, Number(x) || 0)); }
     function propertyScore({ price, local_avg_price, days_listed, min_price, max_price, yield_percent, max_yield, location_score, condition_score, growth_score }){
@@ -427,12 +452,21 @@
     }
 
     // --- Scraper UX helpers ---
-    const SCRAPE_KEYS = ['scrape-mode','scrape-filename','scrape-location','scrape-min-price','scrape-max-price','scrape-beds','scrape-baths','scrape-max-days','scrape-max-pages','scrape-type','scrape-min-yield','scrape-max-yield','scrape-min-l','scrape-min-c','scrape-min-g','proxy-enabled','proxy-endpoint','proxy-user','proxy-pass','proxy-rotate'];
+    const SCRAPE_KEYS = ['scrape-mode','scrape-filename','scrape-location','scrape-min-price','scrape-max-price','scrape-beds','scrape-baths','scrape-max-days','scrape-max-pages','scrape-type','scrape-min-yield','scrape-max-yield','scrape-min-l','scrape-min-c','scrape-min-g','proxy-enabled','proxy-endpoint','proxy-rotate','zillow-url','py-delay-ms'];
+    const SENSITIVE_KEYS = ['zillow-zguid','zillow-jsess','proxy-user','proxy-pass'];
     function loadScrapeSettings(){
       SCRAPE_KEYS.forEach(k=>{
         const el = document.getElementById(k);
         if (!el) return;
         const v = localStorage.getItem(k);
+        if (v==null) return;
+        if (el.type==='checkbox') el.checked = v==='1';
+        else el.value = v;
+      });
+      SENSITIVE_KEYS.forEach(k=>{
+        const el = document.getElementById(k);
+        if (!el) return;
+        const v = sessionStorage.getItem(k);
         if (v==null) return;
         if (el.type==='checkbox') el.checked = v==='1';
         else el.value = v;
@@ -444,6 +478,12 @@
         if (!el) return;
         const v = (el.type==='checkbox') ? (el.checked?'1':'0') : el.value;
         localStorage.setItem(k, v);
+      });
+      SENSITIVE_KEYS.forEach(k=>{
+        const el = document.getElementById(k);
+        if (!el) return;
+        const v = (el.type==='checkbox') ? (el.checked?'1':'0') : el.value;
+        sessionStorage.setItem(k, v);
       });
     }
     function setScrapeDisabled(disabled, msg){
@@ -457,6 +497,7 @@
 
     loadScrapeSettings();
     SCRAPE_KEYS.forEach(k=>{ const el=document.getElementById(k); if (el) el.addEventListener('change', saveScrapeSettings); if (el && (el.tagName==='INPUT' && el.type==='text')) el.addEventListener('input', saveScrapeSettings); });
+    SENSITIVE_KEYS.forEach(k=>{ const el=document.getElementById(k); if (el) el.addEventListener('change', saveScrapeSettings); if (el && (el.tagName==='INPUT' && el.type==='text')) el.addEventListener('input', saveScrapeSettings); });
 
     // Client-side demo generator (no server dependency)
     function demoData(params){
@@ -508,6 +549,27 @@
         params.append('proxy_pass', document.getElementById('proxy-pass').value||'');
         params.append('proxy_rotate', document.getElementById('proxy-rotate').checked? '1':'0');
       }
+      if (mode==='python-httpx'){
+        const u = document.getElementById('zillow-url').value||'';
+        const zg = document.getElementById('zillow-zguid').value||'';
+        const js = document.getElementById('zillow-jsess').value||'';
+        if (!u || !zg || !js){
+          setScrapeDisabled(false, 'Missing Zillow URL or cookies.');
+          alert('Please provide Zillow property URL, zguid and JSESSIONID.');
+          return;
+        }
+        // Normalize multiple URLs (split by comma/newline)
+        const urls = u.split(/\n|,/).map(s=>s.trim()).filter(Boolean);
+        if (urls.length>1){
+          params.append('zillow_urls', urls.join(','));
+        } else {
+          params.append('zillow_url', urls[0]);
+        }
+        params.append('zguid', zg);
+        params.append('jsessionid', js);
+        const dms = document.getElementById('py-delay-ms').value||'';
+        if (dms) params.append('delay_ms', dms);
+      }
       // If demo, generate locally to avoid server dependency
       if (mode==='demo'){
         try{
@@ -530,7 +592,7 @@
           return;
         }
       }
-      const endpoint = 'scrape-headless.php';
+      const endpoint = (mode==='python-httpx') ? 'scrape-python.php' : 'scrape-headless.php';
       saveScrapeSettings();
       setScrapeDisabled(true, 'Connecting...');
       const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: params.toString() });
