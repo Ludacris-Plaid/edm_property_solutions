@@ -1,35 +1,42 @@
 // Theme Toggle
 const toggle = document.getElementById('theme-toggle');
 const body = document.body;
-const icon = toggle.querySelector('i');
+const icon = toggle ? toggle.querySelector('i') : null;
 
-toggle.addEventListener('click', () => {
+if (toggle && icon) {
+  toggle.addEventListener('click', () => {
     body.classList.toggle('dark-mode');
     body.classList.toggle('light-mode');
     icon.classList.toggle('fa-moon');
     icon.classList.toggle('fa-sun');
     localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-});
-if (localStorage.getItem('theme') === 'dark') {
+  });
+  if (localStorage.getItem('theme') === 'dark') {
     body.classList.add('dark-mode'); body.classList.remove('light-mode');
     icon.classList.replace('fa-moon', 'fa-sun');
+  }
 }
 
-// Login
+// Login (optional on pages that include the modal)
 const loginBtn = document.getElementById('admin-login-btn');
-const modal = new bootstrap.Modal(document.getElementById('loginModal'));
-loginBtn.addEventListener('click', () => modal.show());
-
-document.getElementById('login-form').addEventListener('submit', (e) => {
+const loginModalEl = document.getElementById('loginModal');
+const modal = loginModalEl && window.bootstrap ? new bootstrap.Modal(loginModalEl) : null;
+if (loginBtn && modal) {
+  loginBtn.addEventListener('click', () => modal.show());
+}
+const loginForm = document.getElementById('login-form');
+if (loginForm && modal) {
+  loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (document.getElementById('username').value === 'admin' && document.getElementById('password').value === 'chaos2025') {
-        localStorage.setItem('adminLoggedIn', 'true');
-        modal.hide();
-        window.location.href = 'admin.html';
+      localStorage.setItem('adminLoggedIn', 'true');
+      modal.hide();
+      window.location.href = 'admin.html';
     } else {
-        alert('Invalid credentials');
+      alert('Invalid credentials');
     }
-});
+  });
+}
 
 // Counter animation function (used when stats section reveals)
 function startCounters(root = document) {
@@ -149,7 +156,8 @@ async function buildCarouselFromLeads() {
   const inner = document.getElementById('propertyCarouselInner');
   if (!indicators || !inner) return;
   try {
-    const res = await fetch('leads.json');
+    const res = await fetch('./leads.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('leads.json not ok: '+res.status);
     const leads = await res.json();
     if (!Array.isArray(leads) || !leads.length) return;
 
@@ -252,7 +260,7 @@ async function buildCarouselFromLeads() {
         <div class="row justify-content-center">
           <div class="col-md-10 col-lg-8">
             <div class="property-card border-0 hover-lift">
-              <div class="property-image" style="background-image:url('https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1600&auto=format&fit=crop');"></div>
+              <div class="property-image" style="background-image:url('${img}');"></div>
               <div class="p-3 d-flex flex-column gap-1">
                 <div class="d-flex justify-content-between align-items-center">
                   <h6 class="fw-bold mb-0">${lead.address || 'Property'}</h6>
@@ -285,3 +293,38 @@ async function buildCarouselFromLeads() {
 }
 
 buildCarouselFromLeads();
+
+// -----------------------------
+// Hero Typewriter (looping phrases)
+// -----------------------------
+(function(){
+  const el = document.getElementById('typewriter');
+  if (!el) return;
+  const phrases = [
+    'Built to Move Markets',
+    'AI-Powered Intelligence for Global Real Estate',
+    'Smarter Real Estate, Smarter Decisions',
+    'Turning Data Into Deals',
+    'Advanced Intelligence. Real Results.'
+  ];
+  let i = 0, idx = 0, typing = true;
+  const speed = 60, hold = 2250, erase = 37;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { el.textContent = phrases[0]; return; }
+
+  function tick(){
+    const text = phrases[i];
+    if (typing){
+      el.textContent = text.slice(0, idx+1);
+      idx++;
+      if (idx === text.length){ typing = false; setTimeout(tick, hold); return; }
+      setTimeout(tick, speed);
+    } else {
+      el.textContent = text.slice(0, idx-1);
+      idx--;
+      if (idx === 0){ typing = true; i = (i+1) % phrases.length; setTimeout(tick, 350); return; }
+      setTimeout(tick, erase);
+    }
+  }
+  tick();
+})();

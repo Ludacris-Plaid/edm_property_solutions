@@ -1,72 +1,376 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - AlbertaDeal Finder</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Synapse Realty Systems</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
-<body class="dark-mode">
-    <nav class="navbar navbar-dark bg-gradient-dark">
-        <div class="container">
-            <a href="index.html" class="btn btn-outline-light btn-sm"><i class="fas fa-arrow-left"></i> Back to Site</a>
-            <div class="ms-auto d-flex align-items-center">
-                <span class="text-warning me-3">ADMIN MODE</span>
-                <button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button>
-            </div>
-        </div>
-    </nav>
+<body class="light-mode with-fixed-nav">
+  <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center" href="index.html">
+        <img src="assets/logo.svg" alt="Synapse Realty Systems" class="brand-logo" onerror="this.src='assets/logo.png'">
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li><a class="nav-link nav-icon" href="index.html" title="Home" aria-label="Home"><i class="fas fa-house"></i></a></li>
+          <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-list-check"></i></a></li>
+          <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
+          <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button></li>
+          <li><button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-    <div class="container py-5">
-        <h1 class="text-center text-danger mb-4">AI-SCRAPED LEAD VAULT</h1>
-        <div class="text-center mb-4">
-            <button id="refresh" class="btn btn-warning">Refresh</button>
-            <button id="export" class="btn btn-success ms-2">Export CSV</button>
+  <main class="container py-4">
+    <div class="row g-4 align-items-stretch">
+      <div class="col-12 col-lg-8">
+        <div class="stat-card p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">Lead Dashboard</h4>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <input id="search" type="search" class="form-control form-control-sm" placeholder="Search address/type...">
+              <input id="f-min-score" type="number" step="0.1" min="1" max="5" class="form-control form-control-sm" style="width:110px" placeholder="Min Score">
+              <input id="f-min-yield" type="number" step="0.1" min="0" class="form-control form-control-sm" style="width:110px" placeholder="Min % Yield">
+              <input id="f-max-days" type="number" step="1" min="0" class="form-control form-control-sm" style="width:110px" placeholder="Max Days">
+              <button id="applyFilters" class="btn btn-outline-secondary btn-sm">Apply</button>
+              <button id="clearFilters" class="btn btn-outline-secondary btn-sm">Clear</button>
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">Columns</button>
+                <div class="dropdown-menu p-2 small" id="colToggles" style="min-width:220px">
+                  <label class="d-block"><input type="checkbox" data-col="score" checked> Score</label>
+                  <label class="d-block"><input type="checkbox" data-col="address" checked> Address</label>
+                  <label class="d-block"><input type="checkbox" data-col="type" checked> Type</label>
+                  <label class="d-block"><input type="checkbox" data-col="price" checked> Price</label>
+                  <label class="d-block"><input type="checkbox" data-col="local_avg_price" checked> Local Avg</label>
+                  <label class="d-block"><input type="checkbox" data-col="days_listed" checked> Days</label>
+                  <label class="d-block"><input type="checkbox" data-col="yield_percent" checked> Yield %</label>
+                  <label class="d-block"><input type="checkbox" data-col="location_score" checked> L</label>
+                  <label class="d-block"><input type="checkbox" data-col="condition_score" checked> C</label>
+                  <label class="d-block"><input type="checkbox" data-col="growth_score" checked> G</label>
+                  <label class="d-block"><input type="checkbox" data-col="contact" checked> Contact</label>
+                  <label class="d-block"><input type="checkbox" data-col="link" checked> Link</label>
+                </div>
+              </div>
+              <button id="exportView" class="btn btn-outline-secondary btn-sm" title="Export current view">Export View</button>
+              <button id="export" class="btn btn-outline-secondary btn-sm">Export All</button>
+              <button id="refresh" class="btn btn-primary btn-sm">Refresh</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table id="leadsTable" class="table align-middle">
+              <thead>
+                <tr>
+                  <th data-sort="score" class="sortable">Score</th>
+                  <th data-sort="address" class="sortable">Address</th>
+                  <th data-sort="type" class="sortable">Type</th>
+                  <th data-sort="price" class="sortable">Price</th>
+                  <th data-sort="local_avg_price" class="sortable">Local Avg</th>
+                  <th data-sort="days_listed" class="sortable">Days</th>
+                  <th data-sort="yield_percent" class="sortable">Yield %</th>
+                  <th>L</th>
+                  <th>C</th>
+                  <th>G</th>
+                  <th>Contact</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
-        <div id="leads-table"></div>
+      </div>
+      <div class="col-12 col-lg-4">
+        <div class="stat-card p-3 h-100">
+          <h5 class="mb-3">Analytics</h5>
+          <canvas id="scoreDist" height="160"></canvas>
+          <canvas id="yieldScatter" height="160" class="mt-3"></canvas>
+          <div class="row text-center mt-3 g-2">
+            <div class="col-4"><div class="p-2 bg-light rounded"><div class="small text-muted">Avg Score</div><div id="avgScore" class="fw-bold">-</div></div></div>
+            <div class="col-4"><div class="p-2 bg-light rounded"><div class="small text-muted">Avg Yield</div><div id="avgYield" class="fw-bold">-</div></div></div>
+            <div class="col-4"><div class="p-2 bg-light rounded"><div class="small text-muted">Avg Days</div><div id="avgDays" class="fw-bold">-</div></div></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <script>
-        if (!localStorage.getItem('adminLoggedIn')) {
-            alert('UNAUTHORIZED. Redirecting...');
-            window.location = 'index.html';
-        }
+    <div class="row g-3 mt-1" id="top5Row"></div>
 
-        const tableDiv = document.getElementById('leads-table');
-        async function loadLeads() {
-            try {
-                const res = await fetch('leads.json');
-                const leads = await res.json();
-                let html = `<table class="table table-dark table-striped"><thead><tr>
-                    <th>Address</th><th>Type</th><th>ARV</th><th>Distress</th><th>Contact</th><th>Action</th>
-                </tr></thead><tbody>`;
-                leads.forEach(l => {
-                    html += `<tr>
-                        <td>${l.address}</td>
-                        <td><span class="badge bg-danger">${l.type}</span></td>
-                        <td class="text-success">$${l.arv}K</td>
-                        <td class="text-warning">${l.distress}</td>
-                        <td>${l.contact}</td>
-                        <td><button class="btn btn-sm btn-outline-light" onclick="alert('SMS: ${l.contact}')">SMS</button></td>
-                    </tr>`;
-                });
-                html += `</tbody></table>`;
-                tableDiv.innerHTML = html;
-            } catch { tableDiv.innerHTML = '<div class="alert alert-danger">leads.json missing</div>'; }
-        }
-        document.getElementById('refresh').onclick = loadLeads;
-        document.getElementById('export').onclick = () => {
-            fetch('leads.json').then(r => r.json()).then(data => {
-                let csv = 'Address,Type,ARV,Distress,Contact\n';
-                data.forEach(d => csv += `"${d.address}",${d.type},${d.arv},"${d.distress}","${d.contact}"\n`);
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
-                a.download = 'albertadeals_chaos.csv';
-                a.click();
-            });
-        };
-        loadLeads();
-    </script>
+    <div class="row g-4 mt-1">
+      <div class="col-12">
+        <div class="stat-card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0">Notes</h5>
+            <div class="d-flex flex-wrap gap-2">
+              <button class="btn btn-sm btn-outline-secondary" data-cmd="bold"><i class="fas fa-bold"></i></button>
+              <button class="btn btn-sm btn-outline-secondary" data-cmd="italic"><i class="fas fa-italic"></i></button>
+              <button class="btn btn-sm btn-outline-secondary" data-cmd="underline"><i class="fas fa-underline"></i></button>
+              <button class="btn btn-sm btn-outline-secondary" data-cmd="insertUnorderedList"><i class="fas fa-list-ul"></i></button>
+              <button class="btn btn-sm btn-outline-secondary" data-cmd="insertOrderedList"><i class="fas fa-list-ol"></i></button>
+              <button id="notes-clear" class="btn btn-sm btn-outline-danger">Clear</button>
+              <button id="notes-export" class="btn btn-sm btn-primary">Export .txt</button>
+            </div>
+          </div>
+          <div id="notes" contenteditable="true" class="form-control" style="min-height:200px"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-4 site-footer">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+      <p class="small mb-0">© 2025 Indications Media</p>
+      <div class="d-flex align-items-center gap-2">
+        <span class="small opacity-75">Built With:</span>
+        <img src="assets/vs.png" alt="VS Code" style="height:20px;width:auto">
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    if (!localStorage.getItem('adminLoggedIn')) {
+      alert('UNAUTHORIZED. Redirecting...');
+      window.location = 'index.html';
+    }
+
+    function clamp01(x){ return Math.max(0, Math.min(1, Number(x) || 0)); }
+    function propertyScore({ price, local_avg_price, days_listed, min_price, max_price, yield_percent, max_yield, location_score, condition_score, growth_score }){
+      const P = 1 - (price - min_price) / Math.max(1, (max_price - min_price));
+      const R = (Number(yield_percent)||0) / Math.max(1, (max_yield||12));
+      const L = clamp01(location_score), C = clamp01(condition_score), G = clamp01(growth_score);
+      let score_raw = 0.4*P + 0.3*R + 0.15*L + 0.1*C + 0.05*G;
+      if (Number(price) <= 0.8 * Number(local_avg_price||price)) score_raw += 0.2;
+      if (Number(days_listed) > 30) score_raw += 0.1;
+      score_raw = Math.min(score_raw, 1.0);
+      return Math.round((1 + score_raw*4)*100)/100;
+    }
+
+    const tbody = document.querySelector('#leadsTable tbody');
+    const search = document.getElementById('search');
+    let chart, scatter, rows = [], currentSort = { key: 'score', dir: 'desc' };
+    let currentFiltered = [];
+    const visibleCols = {score:true,address:true,type:true,price:true,local_avg_price:true,days_listed:true,yield_percent:true,location_score:true,condition_score:true,growth_score:true,contact:true,link:true};
+
+    async function fetchLeads(){
+      const res = await fetch('leads.json');
+      return await res.json();
+    }
+
+    function computeScores(leads){
+      const prices = leads.map(l => Number(l.price)||0).filter(x=>x>0);
+      const min_price = Math.max(50000, Math.min(...prices));
+      const max_price = Math.max(...prices) || (min_price + 1);
+      return leads.map((l,i)=>{
+        const price = Number(l.price)||Math.round((Number(l.local_avg_price)||350000)*0.7);
+        const local_avg_price = Number(l.local_avg_price)||Math.round(price/0.7);
+        const days_listed = Number(l.days_listed)|| (10 + i*3);
+        const yield_percent = (l.yield_percent!=null? Number(l.yield_percent): 6);
+        const s = propertyScore({price, local_avg_price, days_listed, min_price, max_price, yield_percent, max_yield:12, location_score:l.location_score, condition_score:l.condition_score, growth_score:l.growth_score});
+        return { ...l, price, local_avg_price, days_listed, yield_percent, score:s };
+      });
+    }
+
+    function renderTop5(data){
+      const wrap = document.getElementById('top5Row');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      data.slice(0,5).forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6 col-xl-4';
+        col.innerHTML = `
+          <div class="stat-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong>${item.address||'Property'}</strong>
+              <span class="badge ${item.score>=4?'bg-success':'bg-primary'}">${Number(item.score||0).toFixed(2)}</span>
+            </div>
+            <div class="small text-muted">$${Number(item.price||0).toLocaleString()} • ${item.type||'-'} • ${Number(item.yield_percent||0).toFixed(1)}% yield</div>
+          </div>`;
+        wrap.appendChild(col);
+      });
+    }
+
+    function renderTable(data){
+      tbody.innerHTML = '';
+      data.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td data-col="score"><span class="badge ${l.score>=4?'bg-success':'bg-primary'}">${l.score?.toFixed? l.score.toFixed(2): l.score}</span></td>
+          <td data-col="address">${l.address||'-'}</td>
+          <td data-col="type"><span class="badge bg-info text-dark">${l.type||'-'}</span></td>
+          <td data-col="price">$${Number(l.price||0).toLocaleString()}</td>
+          <td data-col="local_avg_price">$${Number(l.local_avg_price||0).toLocaleString()}</td>
+          <td data-col="days_listed">${Number(l.days_listed||0)}</td>
+          <td data-col="yield_percent">${Number(l.yield_percent||0).toFixed(1)}</td>
+          <td data-col="location_score">${Number(l.location_score||0).toFixed(2)}</td>
+          <td data-col="condition_score">${Number(l.condition_score||0).toFixed(2)}</td>
+          <td data-col="growth_score">${Number(l.growth_score||0).toFixed(2)}</td>
+          <td data-col="contact">${l.contact? `<a href="tel:${l.contact}">${l.contact}</a>` : '-'}</td>
+          <td data-col="link">${l.link? `<a href="${l.link}" target="_blank">Open</a>` : '-'}</td>`;
+        // apply visibility
+        tr.querySelectorAll('[data-col]').forEach(td => { const key = td.getAttribute('data-col'); if (!visibleCols[key]) td.style.display='none'; });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCharts(data){
+      const ctx = document.getElementById('scoreDist');
+      const buckets = [0,0,0,0,0];
+      data.forEach(l => { const s = Math.max(1, Math.min(5, Math.round(l.score))); buckets[s-1]++; });
+      const ds = {labels:['1★','2★','3★','4★','5★'], datasets:[{label:'Count', data:buckets, backgroundColor:'#2DB5E5'}]};
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, { type:'bar', data: ds, options:{responsive:true, plugins:{legend:{display:false}}} });
+      const avg = (data.reduce((a,b)=>a+Number(b.score||0),0)/Math.max(1,data.length)).toFixed(2);
+      const ay = (data.reduce((a,b)=>a+Number(b.yield_percent||0),0)/Math.max(1,data.length)).toFixed(1)+'%';
+      const ad = Math.round(data.reduce((a,b)=>a+Number(b.days_listed||0),0)/Math.max(1,data.length));
+      document.getElementById('avgScore').textContent = avg;
+      document.getElementById('avgYield').textContent = ay;
+      document.getElementById('avgDays').textContent = ad;
+
+      const sc = document.getElementById('yieldScatter');
+      const points = data.map(l => ({x:Number(l.days_listed||0), y:Number(l.yield_percent||0)}));
+      const scatterData = { datasets: [{ label: 'Yield vs Days', data: points, backgroundColor: '#2DB5E5' }] };
+      if (scatter) scatter.destroy();
+      scatter = new Chart(sc, { type: 'scatter', data: scatterData, options:{ scales:{ x:{ title:{display:true, text:'Days Listed'} }, y:{ title:{display:true, text:'Yield %'} } }, plugins:{legend:{display:false}} } });
+    }
+
+    async function load(){
+      try{
+        const raw = await fetchLeads();
+        const scored = computeScores(raw).sort((a,b)=> (b.score||0) - (a.score||0));
+        rows = scored;
+        currentFiltered = [...rows];
+        renderTable(currentFiltered);
+        renderCharts(currentFiltered);
+        renderTop5(currentFiltered);
+      } catch(e){
+        tbody.innerHTML = '<tr><td colspan="12" class="text-danger">Failed to load leads.json</td></tr>';
+      }
+    }
+
+    document.getElementById('refresh').onclick = load;
+    document.getElementById('export').onclick = () => {
+      const data = rows;
+      const headers = ['Score','Address','Type','Price','Local Avg','Days','Yield %','Location','Condition','Growth','Contact','Link'];
+      let csv = headers.join(',')+'\n';
+      data.forEach(d => {
+        csv += [d.score,`"${d.address||''}"`,d.type||'',d.price||'',d.local_avg_price||'',d.days_listed||'',d.yield_percent||'',d.location_score||'',d.condition_score||'',d.growth_score||'',d.contact||'',d.link||''].join(',')+'\n';
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+      a.download = 'synapse_leads.csv';
+      a.click();
+    };
+
+    // Export current view
+    document.getElementById('exportView').onclick = () => {
+      const data = currentFiltered.length? currentFiltered : rows;
+      const headers = ['Score','Address','Type','Price','Local Avg','Days','Yield %','Location','Condition','Growth','Contact','Link'];
+      let csv = headers.join(',')+'\n';
+      data.forEach(d => {
+        csv += [d.score,`"${d.address||''}"`,d.type||'',d.price||'',d.local_avg_price||'',d.days_listed||'',d.yield_percent||'',d.location_score||'',d.condition_score||'',d.growth_score||'',d.contact||'',d.link||''].join(',')+'\n';
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+      a.download = 'synapse_leads_view.csv';
+      a.click();
+    };
+
+    function applyAllFilters(){
+      const q = (search.value||'').toLowerCase();
+      const ms = Number(document.getElementById('f-min-score').value||0);
+      const my = Number(document.getElementById('f-min-yield').value||0);
+      const md = Number(document.getElementById('f-max-days').value||Infinity);
+      currentFiltered = rows.filter(r => {
+        const hits = `${r.address} ${r.type}`.toLowerCase().includes(q);
+        return hits && (Number(r.score||0)>=ms) && (Number(r.yield_percent||0)>=my) && (Number(r.days_listed||0)<=md);
+      });
+      // re-apply current sort
+      const key = currentSort.key, dir = currentSort.dir;
+      currentFiltered.sort((a,b)=>{ const av=a[key], bv=b[key]; const an=Number(av), bn=Number(bv); const bothNum=!isNaN(an)&&!isNaN(bn); let cmp=bothNum? an-bn : String(av).localeCompare(String(bv)); return dir==='asc'? cmp : -cmp; });
+      renderTable(currentFiltered);
+      renderCharts(currentFiltered);
+      renderTop5(currentFiltered);
+    }
+
+    search.addEventListener('input', applyAllFilters);
+    document.getElementById('applyFilters').addEventListener('click', applyAllFilters);
+    document.getElementById('clearFilters').addEventListener('click', ()=>{
+      document.getElementById('f-min-score').value='';
+      document.getElementById('f-min-yield').value='';
+      document.getElementById('f-max-days').value='';
+      search.value='';
+      applyAllFilters();
+    });
+
+    // Column visibility toggles
+    document.querySelectorAll('#colToggles [data-col]').forEach(cb => {
+      cb.addEventListener('change', ()=>{
+        const key = cb.getAttribute('data-col');
+        visibleCols[key] = cb.checked;
+        // apply to current rows immediately
+        tbody.querySelectorAll(`[data-col="${key}"]`).forEach(td => td.style.display = cb.checked? '' : 'none');
+      });
+    });
+
+    load();
+
+    // Sortable headers
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.style.cursor = 'pointer';
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort');
+        if (currentSort.key === key) { currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc'; } else { currentSort = { key, dir:'asc' }; }
+        const sorted = [...rows].sort((a,b)=>{
+          const av = (a[key]??''); const bv = (b[key]??'');
+          const num = (x)=> (typeof x==='string'? Number(x.replace(/[^0-9.\-]/g,'')) : Number(x));
+          const an = num(av); const bn = num(bv);
+          const bothNum = !isNaN(an) && !isNaN(bn);
+          let cmp = 0;
+          if (bothNum) cmp = an - bn; else cmp = String(av).localeCompare(String(bv));
+          return currentSort.dir==='asc'? cmp : -cmp;
+        });
+        renderTable(sorted);
+      });
+    });
+
+    // Local theme toggle persistence on admin
+    (function(){
+      const btn = document.getElementById('theme-toggle');
+      const ic = btn ? btn.querySelector('i') : null;
+      const apply = (mode)=>{
+        document.body.classList.toggle('dark-mode', mode==='dark');
+        document.body.classList.toggle('light-mode', mode!=='dark');
+        if (ic) { ic.classList.toggle('fa-moon', mode!=='dark'); ic.classList.toggle('fa-sun', mode==='dark'); }
+      };
+      const saved = localStorage.getItem('theme') || 'light';
+      apply(saved);
+      if (btn) btn.addEventListener('click', ()=>{ const m = document.body.classList.contains('dark-mode')? 'light':'dark'; localStorage.setItem('theme', m); apply(m); });
+    })();
+
+    const notes = document.getElementById('notes');
+    const toolbar = document.querySelectorAll('[data-cmd]');
+    if (notes) {
+      const saved = localStorage.getItem('adminNotes');
+      if (saved) notes.innerHTML = saved;
+      notes.addEventListener('input', () => localStorage.setItem('adminNotes', notes.innerHTML));
+      toolbar.forEach(btn => btn.addEventListener('click', () => { document.execCommand(btn.dataset.cmd, false, null); notes.focus(); localStorage.setItem('adminNotes', notes.innerHTML); }));
+      document.getElementById('notes-clear').addEventListener('click', () => { notes.innerHTML = ''; localStorage.removeItem('adminNotes'); });
+      document.getElementById('notes-export').addEventListener('click', () => {
+        const text = notes.innerText.replace(/\u00A0/g,' ');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], {type: 'text/plain'}));
+        a.download = 'synapse_notes.txt';
+        a.click();
+      });
+    }
+  </script>
 </body>
 </html>
