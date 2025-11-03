@@ -2,6 +2,11 @@
 // PHP gateway to invoke Python httpx+parsel Zillow scraper.
 // POST fields: zillow_url, zguid, jsessionid, (optional) proxy_endpoint, proxy_user, proxy_pass
 header('Content-Type: application/json');
+// CORS for development; tighten for production
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); echo json_encode(['error'=>'Method Not Allowed']); exit; }
 
 $zurl = $_POST['zillow_url'] ?? '';
@@ -26,14 +31,34 @@ $payload = [
   'delay_ms' => $delay_ms,
 ];
 
-$cmd = 'python3 python_scraper/scrape_zillow.py';
+$candidates = [
+  __DIR__ . '/.venv_py/bin/python',
+  __DIR__ . '/.venv_py/bin/python3',
+  __DIR__ . '/.venv/bin/python',
+  __DIR__ . '/.venv/bin/python3',
+  __DIR__ . '/venv/bin/python',
+  __DIR__ . '/venv/bin/python3',
+];
+$py = 'python3';
+foreach ($candidates as $cand) { if (file_exists($cand)) { $py = $cand; break; } }
+$cmd = $py . ' python_scraper/scrape_zillow.py';
 $descriptorspec = [
   0 => ['pipe', 'r'],
   1 => ['pipe', 'w'],
   2 => ['pipe', 'w'],
 ];
 
-$process = proc_open($cmd, $descriptorspec, $pipes, __DIR__);
+$env = $_ENV;
+// Prepend venv bin to PATH and expose VIRTUAL_ENV (best-effort)
+$venv_dir = null;
+foreach ([__DIR__.'/.venv_py', __DIR__.'/.venv', __DIR__.'/venv'] as $vd) { if (is_dir($vd)) { $venv_dir = $vd; break; } }
+if ($venv_dir) {
+  $venv_bin = $venv_dir . '/bin';
+  $env['VIRTUAL_ENV'] = $venv_dir;
+  $env['PATH'] = $venv_bin . PATH_SEPARATOR . (getenv('PATH') ?: '');
+}
+
+$process = proc_open($cmd, $descriptorspec, $pipes, __DIR__, $env);
 if (!is_resource($process)) { http_response_code(500); echo json_encode(['error'=>'Failed to start python scraper']); exit; }
 
 fwrite($pipes[0], json_encode($payload));
@@ -47,7 +72,7 @@ $exit = proc_close($process);
 
 if ($exit !== 0) {
   http_response_code(500);
-  echo json_encode(['error'=>'Python scraper error','details'=> substr($stderr,0,4000)]);
+  echo json_encode(['error'=>'Python scraper error','py'=>$py,'details'=> substr($stderr,0,4000)]);
   exit;
 }
 
