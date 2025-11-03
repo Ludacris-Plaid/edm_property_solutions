@@ -35,10 +35,17 @@
       <div class="col-md-6">
         <div class="stat-card p-4 text-center">
           <h5 class="mb-2">Admin Access</h5>
-          <p class="text-muted small mb-3">Confirm to enter the admin panel.</p>
-          <div class="d-flex justify-content-center gap-2">
-            <button id="admin-enter" class="btn btn-primary">Enter Admin</button>
-            <a href="index.html" class="btn btn-outline-secondary">Back</a>
+          <p class="text-muted small mb-3">Enter the 4-digit PIN to access the admin panel.</p>
+          <div class="d-flex flex-column align-items-center gap-2">
+            <div class="input-group" style="max-width:260px">
+              <span class="input-group-text"><i class="fas fa-key"></i></span>
+              <input id="admin-pin" class="form-control" inputmode="numeric" maxlength="4" placeholder="PIN" aria-label="Admin PIN">
+            </div>
+            <div class="d-flex justify-content-center gap-2">
+              <button id="admin-enter" class="btn btn-primary">Unlock</button>
+              <a href="index.html" class="btn btn-outline-secondary">Back</a>
+            </div>
+            <div id="admin-pin-error" class="text-danger small" style="display:none">Incorrect PIN. Try again.</div>
           </div>
         </div>
       </div>
@@ -220,11 +227,20 @@
       if (mainEl) mainEl.style.display = 'none';
       if (gateEl) gateEl.style.display = 'block';
     }
-    document.getElementById('admin-enter')?.addEventListener('click', () => {
-      localStorage.setItem('adminLoggedIn','1');
-      if (gateEl) gateEl.style.display = 'none';
-      if (mainEl) mainEl.style.display = '';
-    });
+    function tryUnlock(){
+      const pin = (document.getElementById('admin-pin')?.value || '').trim();
+      const err = document.getElementById('admin-pin-error');
+      if (pin === '1381'){
+        localStorage.setItem('adminLoggedIn','1');
+        if (err) err.style.display = 'none';
+        if (gateEl) gateEl.style.display = 'none';
+        if (mainEl) mainEl.style.display = '';
+      } else {
+        if (err) err.style.display = 'block';
+      }
+    }
+    document.getElementById('admin-enter')?.addEventListener('click', tryUnlock);
+    document.getElementById('admin-pin')?.addEventListener('keypress', (e)=>{ if (e.key==='Enter') tryUnlock(); });
 
     function clamp01(x){ return Math.max(0, Math.min(1, Number(x) || 0)); }
     function propertyScore({ price, local_avg_price, days_listed, min_price, max_price, yield_percent, max_yield, location_score, condition_score, growth_score }){
