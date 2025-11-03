@@ -1,0 +1,10 @@
+{
+  "name": "synapse-scraper",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Headless scraper service for admin panel",
+  "dependencies": {
+    "playwright": "^1.47.2"
+  }
+}

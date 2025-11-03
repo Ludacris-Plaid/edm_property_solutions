@@ -80,6 +80,67 @@
               <button id="refresh" class="btn btn-primary btn-sm">Refresh</button>
             </div>
           </div>
+
+          <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">Zillow Scraper</h6>
+              <div class="d-flex gap-2 align-items-center">
+                <select id="scrape-mode" class="form-select form-select-sm" style="width:200px">
+                  <option value="demo">Demo (no external calls)</option>
+                  <option value="headless">Headless + Proxy</option>
+                </select>
+                <input id="scrape-filename" class="form-control form-control-sm" style="width:200px" placeholder="Filename (e.g., zillow.csv)">
+                <button id="scrape-run" class="btn btn-primary btn-sm">Scrape & Load</button>
+                <span id="scrape-status" class="small text-muted"></span>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-12 col-md-4"><input id="scrape-location" class="form-control form-control-sm" placeholder="Location (e.g., Austin, TX)"></div>
+              <div class="col-6 col-md-2"><input id="scrape-min-price" type="number" class="form-control form-control-sm" placeholder="Min Price"></div>
+              <div class="col-6 col-md-2"><input id="scrape-max-price" type="number" class="form-control form-control-sm" placeholder="Max Price"></div>
+              <div class="col-6 col-md-2"><input id="scrape-beds" type="number" min="0" class="form-control form-control-sm" placeholder="Beds"></div>
+              <div class="col-6 col-md-2"><input id="scrape-baths" type="number" min="0" step="0.5" class="form-control form-control-sm" placeholder="Baths"></div>
+              <div class="col-6 col-md-2"><input id="scrape-max-days" type="number" min="0" class="form-control form-control-sm" placeholder="Max Days Old"></div>
+              <div class="col-6 col-md-2"><input id="scrape-max-pages" type="number" min="1" max="50" class="form-control form-control-sm" placeholder="Max Pages (e.g., 10)" value="10"></div>
+              <div class="col-6 col-md-2">
+                <select id="scrape-type" class="form-select form-select-sm">
+                  <option value="">Any Type</option>
+                  <option>Single Family</option>
+                  <option>Condo</option>
+                  <option>Townhouse</option>
+                  <option>Multi-Family</option>
+                  <option>Land</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-2"><input id="scrape-min-yield" type="number" step="0.1" min="0" class="form-control form-control-sm" placeholder="Min Yield %"></div>
+              <div class="col-6 col-md-2"><input id="scrape-max-yield" type="number" step="0.1" min="0" class="form-control form-control-sm" placeholder="Max Yield %"></div>
+              <div class="col-6 col-md-2"><input id="scrape-min-l" type="number" step="0.01" min="0" max="1" class="form-control form-control-sm" placeholder="Min L score"></div>
+              <div class="col-6 col-md-2"><input id="scrape-min-c" type="number" step="0.01" min="0" max="1" class="form-control form-control-sm" placeholder="Min C score"></div>
+              <div class="col-6 col-md-2"><input id="scrape-min-g" type="number" step="0.01" min="0" max="1" class="form-control form-control-sm" placeholder="Min G score"></div>
+
+              <div class="col-12">
+                <div class="border rounded p-2">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="proxy-enabled">
+                    <label class="form-check-label" for="proxy-enabled">Use Smartproxy</label>
+                  </div>
+                  <div class="row g-2 mt-1">
+                    <div class="col-12 col-md-4"><input id="proxy-endpoint" class="form-control form-control-sm" placeholder="http://gate.smartproxy.com:7000"></div>
+                    <div class="col-6 col-md-3"><input id="proxy-user" class="form-control form-control-sm" placeholder="username"></div>
+                    <div class="col-6 col-md-3"><input id="proxy-pass" type="password" class="form-control form-control-sm" placeholder="password"></div>
+                    <div class="col-12 col-md-2">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="proxy-rotate" checked>
+                        <label class="form-check-label" for="proxy-rotate">Rotate</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12"><small class="text-muted">Note: Backend requires configuration to access data sources. Without an API key it will return demo data.</small></div>
+            </div>
+          </div>
+
           <div class="table-responsive">
             <table id="leadsTable" class="table align-middle">
               <thead>
@@ -335,6 +396,103 @@
       a.download = 'synapse_leads.csv';
       a.click();
     };
+
+    // Scraper integration
+    function downloadCSV(filename, data){
+      const headers = ['Score','Address','Type','Price','Local Avg','Days','Yield %','Location','Condition','Growth','Contact','Link'];
+      let csv = headers.join(',')+'\n';
+      data.forEach(d => {
+        csv += [d.score,`"${d.address||''}"`,d.type||'',d.price||'',d.local_avg_price||'',d.days_listed||'',d.yield_percent||'',d.location_score||'',d.condition_score||'',d.growth_score||'',d.contact||'',d.link||''].join(',')+'\n';
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+      a.download = filename || 'zillow_export.csv';
+      a.click();
+    }
+
+    // --- Scraper UX helpers ---
+    const SCRAPE_KEYS = ['scrape-mode','scrape-filename','scrape-location','scrape-min-price','scrape-max-price','scrape-beds','scrape-baths','scrape-max-days','scrape-max-pages','scrape-type','scrape-min-yield','scrape-max-yield','scrape-min-l','scrape-min-c','scrape-min-g','proxy-enabled','proxy-endpoint','proxy-user','proxy-pass','proxy-rotate'];
+    function loadScrapeSettings(){
+      SCRAPE_KEYS.forEach(k=>{
+        const el = document.getElementById(k);
+        if (!el) return;
+        const v = localStorage.getItem(k);
+        if (v==null) return;
+        if (el.type==='checkbox') el.checked = v==='1';
+        else el.value = v;
+      });
+    }
+    function saveScrapeSettings(){
+      SCRAPE_KEYS.forEach(k=>{
+        const el = document.getElementById(k);
+        if (!el) return;
+        const v = (el.type==='checkbox') ? (el.checked?'1':'0') : el.value;
+        localStorage.setItem(k, v);
+      });
+    }
+    function setScrapeDisabled(disabled, msg){
+      const status = document.getElementById('scrape-status');
+      if (status) status.textContent = msg || '';
+      const ids = ['scrape-mode','scrape-filename','scrape-location','scrape-min-price','scrape-max-price','scrape-beds','scrape-baths','scrape-max-days','scrape-type','scrape-min-yield','scrape-max-yield','scrape-min-l','scrape-min-c','scrape-min-g','proxy-enabled','proxy-endpoint','proxy-user','proxy-pass','proxy-rotate','scrape-run'];
+      ids.forEach(id=>{ const el=document.getElementById(id); if (el) el.disabled = disabled; });
+      const btn = document.getElementById('scrape-run');
+      if (btn) btn.innerHTML = disabled? '<span class="spinner-border spinner-border-sm me-1"></span>Scraping...' : 'Scrape & Load';
+    }
+
+    loadScrapeSettings();
+    SCRAPE_KEYS.forEach(k=>{ const el=document.getElementById(k); if (el) el.addEventListener('change', saveScrapeSettings); if (el && (el.tagName==='INPUT' && el.type==='text')) el.addEventListener('input', saveScrapeSettings); });
+
+    async function runScrape(){
+      setScrapeDisabled(true, 'Preparing request...');
+      const mode = (document.getElementById('scrape-mode').value||'demo');
+      const params = new URLSearchParams({
+        location: document.getElementById('scrape-location').value||'',
+        min_price: document.getElementById('scrape-min-price').value||'',
+        max_price: document.getElementById('scrape-max-price').value||'',
+        beds: document.getElementById('scrape-beds').value||'',
+        baths: document.getElementById('scrape-baths').value||'',
+        max_days: document.getElementById('scrape-max-days').value||'',
+        max_pages: document.getElementById('scrape-max-pages').value||'10',
+        type: document.getElementById('scrape-type').value||'',
+        min_yield: document.getElementById('scrape-min-yield').value||'',
+        max_yield: document.getElementById('scrape-max-yield').value||'',
+        min_l: document.getElementById('scrape-min-l').value||'',
+        min_c: document.getElementById('scrape-min-c').value||'',
+        min_g: document.getElementById('scrape-min-g').value||''
+      });
+      if (mode==='headless' && document.getElementById('proxy-enabled').checked){
+        params.append('proxy_endpoint', document.getElementById('proxy-endpoint').value||'');
+        params.append('proxy_user', document.getElementById('proxy-user').value||'');
+        params.append('proxy_pass', document.getElementById('proxy-pass').value||'');
+        params.append('proxy_rotate', document.getElementById('proxy-rotate').checked? '1':'0');
+      }
+      const endpoint = mode==='headless' ? 'scrape-headless.php' : 'scrape-zillow.php';
+      saveScrapeSettings();
+      setScrapeDisabled(true, 'Connecting...');
+      const res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: params.toString() });
+      if (!res.ok){
+        setScrapeDisabled(false, 'Failed ('+res.status+').');
+        alert('Scrape failed: '+res.status);
+        return;
+      }
+      const payload = await res.json();
+      if (!Array.isArray(payload) || payload.length===0){
+        setScrapeDisabled(false, 'No results.');
+        alert('No results returned.');
+        return;
+      }
+      // map and merge
+      const mapped = computeScores(payload).sort((a,b)=> (b.score||0)-(a.score||0));
+      rows = [...mapped, ...rows];
+      currentFiltered = [...rows];
+      renderTable(currentFiltered);
+      renderCharts(currentFiltered);
+      renderTop5(currentFiltered);
+      const name = document.getElementById('scrape-filename').value || 'zillow_export.csv';
+      downloadCSV(name, mapped);
+      setScrapeDisabled(false, 'Loaded '+mapped.length+' new results.');
+    }
+    document.getElementById('scrape-run').addEventListener('click', runScrape);
 
     // Export current view
     document.getElementById('exportView').onclick = () => {
