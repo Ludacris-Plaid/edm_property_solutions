@@ -11,7 +11,7 @@
 </head>
 <body class="light-mode">
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-transparent position-absolute top-0 start-0 w-100">
+        <nav class="navbar navbar-expand-lg navbar-light bg-transparent fixed-top">
             <div class="container">
                 <a class="navbar-brand fw-bold text-primary" href="#">
                     <i class="fas fa-home me-2"></i> AlbertaDeal Finder
@@ -54,23 +54,23 @@
         <div class="container">
             <div class="row text-center">
                 <div class="col-md-4">
-                    <div class="stat-card p-4 border-0 hover-lift">
+                    <div class="stat-card p-4 border-0 hover-lift h-100">
                         <i class="fas fa-sack-dollar text-primary fs-1 mb-3 icon-animate"></i>
                         <h3 class="count fw-bold text-primary" data-target="55000">$0</h3>
                         <p class="text-muted small">Average Profit Per Deal</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="stat-card p-4 border-0 hover-lift">
+                    <div class="stat-card p-4 border-0 hover-lift h-100">
                         <i class="fas fa-chart-simple text-success fs-1 mb-3 icon-animate"></i>
-                        <h3 class="count fw-bold text-success" data-target="70">0</h3><span class="fs-4">%</span>
+                        <h3 class="count fw-bold text-success" data-target="70" data-suffix="%">0</h3>
                         <p class="text-muted small">ARV Accuracy</p>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="stat-card p-4 border-0 hover-lift">
+                    <div class="stat-card p-4 border-0 hover-lift h-100">
                         <i class="fas fa-bolt text-info fs-1 mb-3 icon-animate"></i>
-                        <h3 class="count fw-bold text-info" data-target="24">0</h3><span class="fs-4">/7</span>
+                        <h3 class="count fw-bold text-info" data-target="24" data-suffix="/7">0</h3>
                         <p class="text-muted small">Automated Monitoring</p>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
     </section>
 
     <!-- Properties Carousel -->
-    <section id="properties" class="py-5 reveal">
+    <section id="properties" class="py-5 reveal section-base">
         <div class="container">
             <h2 class="text-center mb-4 fw-bold">Featured Properties</h2>
             <div id="propertyCarousel" class="carousel slide property-carousel" data-bs-ride="carousel" data-bs-interval="6000">

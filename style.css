@@ -5,20 +5,35 @@ h1, h2, h3, .navbar-brand { font-family: 'Space Grotesk', 'Plus Jakarta Sans', s
 body { transition: background 0.3s, color 0.3s; }
 
 :root {
-    --primary: #577399; /* Bootstrap blue */
-    --dark: #495867;
-    --light: #F7F7FF;
-    --gray: #BDD5EA;
-    --card-bg: #f5f7fb; /* subtle off-white */
+    /* Light theme */
+    --bg: #ffffff;
+    --text: #0b1220;
+    --primary: #6366F1; /* indigo */
+    --accent: #22D3EE;  /* cyan */
+    --surface: #f5f7fb; /* subtle off-white */
+    --muted: #64748B;
+    --card-bg: var(--surface);
 }
 
-.light-mode { background: #fff; color: var(--dark); }
-.dark-mode { background: #f8f9fa; color: var(--dark); } /* Subtle dark mode */
+.light-mode { background: var(--bg); color: var(--text); }
+.dark-mode {
+    /* Dark theme (near opposite) */
+    --bg: #0b1220;
+    --text: #e6efff;
+    --primary: #22D3EE; /* swap */
+    --accent: #6366F1;
+    --surface: #111827;
+    --muted: #9fb3c8;
+    --card-bg: var(--surface);
+    background: var(--bg); color: var(--text);
+}
 
-.navbar { border-bottom: 1px solid #dee2e6; }
+.navbar { border-bottom: 1px solid rgba(0,0,0,0.06); }
+.with-fixed-nav { padding-top: 72px; }
 
 /* Solid navbar on scroll */
-.navbar-scrolled { background: rgba(255,255,255,0.98) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.08); backdrop-filter: saturate(180%) blur(6px); }
+.navbar-scrolled { background: rgba(255,255,255,0.92) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.08); backdrop-filter: saturate(180%) blur(6px); }
+.dark-mode .navbar-scrolled { background: rgba(17,24,39,0.9) !important; border-color: rgba(255,255,255,0.06); }
 
 /* Transparent over hero uses white text */
 .navbar.bg-transparent .navbar-brand, .navbar.bg-transparent .nav-link, .navbar.bg-transparent #theme-toggle { color: #fff !important; }
@@ -37,6 +52,7 @@ body { transition: background 0.3s, color 0.3s; }
 .stat-card, .property-card, .tech-card { border-radius: 0.75rem; background: var(--card-bg); box-shadow: 0 10px 26px rgba(16,24,40,0.08); transition: transform 0.25s ease, box-shadow 0.25s ease; }
 .dark-mode .stat-card, .dark-mode .property-card, .dark-mode .tech-card { background: #ffffff; }
 .stat-card:hover, .property-card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+.stat-card { display:flex; flex-direction:column; height:100%; }
 
 .property-card { overflow: hidden; }
 
@@ -57,8 +73,11 @@ body { transition: background 0.3s, color 0.3s; }
   50% { transform: translateY(-6px); }
 }
 
-/* Stats section contrasting background */
-.stats-section { background: linear-gradient(180deg, #eef2f7 0%, #e9eef6 100%); }
+/* Section backgrounds */
+.stats-section { background: linear-gradient(180deg, #eef2ff 0%, #e0f2fe 100%); }
+.dark-mode .stats-section { background: linear-gradient(180deg, #0f172a 0%, #0b1324 100%); }
+.section-base { background: #ffffff; }
+.dark-mode .section-base { background: #0f172a; }
 
 /* Carousel styles for Featured Properties */
 .property-carousel .carousel-item { padding: 0.5rem; }

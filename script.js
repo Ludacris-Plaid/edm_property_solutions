@@ -38,11 +38,13 @@ function startCounters(root = document) {
     counter.dataset.started = 'true';
     const target = +counter.getAttribute('data-target');
     const increment = Math.max(1, Math.floor(target / 200));
+    const prefix = counter.getAttribute('data-prefix') || '';
+    const suffix = counter.getAttribute('data-suffix') || '';
     let current = 0;
     const timer = setInterval(() => {
       current += increment;
       if (current >= target) { current = target; clearInterval(timer); }
-      counter.textContent = Math.floor(current).toLocaleString();
+      counter.textContent = `${prefix}${Math.floor(current).toLocaleString()}${suffix}`;
     }, 10);
   });
 }
@@ -82,7 +84,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   });
 });
 
-// Navbar solid on scroll
+// Navbar solid on scroll (fixed-top)
 const navbar = document.querySelector('nav.navbar');
 const hero = document.querySelector('.hero-video');
 function updateNavbar() {
@@ -90,14 +92,17 @@ function updateNavbar() {
   const threshold = (hero ? hero.offsetHeight : 120) - 40;
   if (window.scrollY > threshold) {
     navbar.classList.add('navbar-scrolled');
-    navbar.classList.remove('bg-transparent', 'position-absolute');
+    navbar.classList.remove('bg-transparent');
   } else {
     navbar.classList.remove('navbar-scrolled');
-    navbar.classList.add('bg-transparent', 'position-absolute');
+    navbar.classList.add('bg-transparent');
   }
 }
 window.addEventListener('scroll', updateNavbar, { passive: true });
-window.addEventListener('load', updateNavbar);
+window.addEventListener('load', () => {
+  document.body.classList.add('with-fixed-nav');
+  updateNavbar();
+});
 
 // -----------------------------
 // Property Scoring + Carousel
