@@ -22,13 +22,28 @@
         <ul class="navbar-nav ms-auto align-items-center">
           <li><a class="nav-link nav-icon" href="index.html" title="Home" aria-label="Home"><i class="fas fa-house"></i></a></li>
           <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-project-diagram"></i></a></li>
-          <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
+          <li><a class="nav-link nav-icon active" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
           <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button></li>
           <li><button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button></li>
         </ul>
       </div>
     </div>
   </nav>
+
+  <div id="admin-gate" class="container py-5" style="display:none">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="stat-card p-4 text-center">
+          <h5 class="mb-2">Admin Access</h5>
+          <p class="text-muted small mb-3">Confirm to enter the admin panel.</p>
+          <div class="d-flex justify-content-center gap-2">
+            <button id="admin-enter" class="btn btn-primary">Enter Admin</button>
+            <a href="index.html" class="btn btn-outline-secondary">Back</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main class="container py-4">
     <div class="row g-4 align-items-stretch">
@@ -138,10 +153,17 @@
   </footer>
 
   <script>
+    const mainEl = document.querySelector('main');
+    const gateEl = document.getElementById('admin-gate');
     if (!localStorage.getItem('adminLoggedIn')) {
-      alert('UNAUTHORIZED. Redirecting...');
-      window.location = 'index.html';
+      if (mainEl) mainEl.style.display = 'none';
+      if (gateEl) gateEl.style.display = 'block';
     }
+    document.getElementById('admin-enter')?.addEventListener('click', () => {
+      localStorage.setItem('adminLoggedIn','1');
+      if (gateEl) gateEl.style.display = 'none';
+      if (mainEl) mainEl.style.display = '';
+    });
 
     function clamp01(x){ return Math.max(0, Math.min(1, Number(x) || 0)); }
     function propertyScore({ price, local_avg_price, days_listed, min_price, max_price, yield_percent, max_yield, location_score, condition_score, growth_score }){
