@@ -21,7 +21,7 @@
       <div class="collapse navbar-collapse" id="nav">
         <ul class="navbar-nav ms-auto align-items-center">
           <li><a class="nav-link nav-icon" href="index.html" title="Home" aria-label="Home"><i class="fas fa-house"></i></a></li>
-          <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-list-check"></i></a></li>
+          <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-network-wired"></i></a></li>
           <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
           <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button></li>
           <li><button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button></li>
@@ -93,6 +93,8 @@
           <h5 class="mb-3">Analytics</h5>
           <canvas id="scoreDist" height="160"></canvas>
           <canvas id="yieldScatter" height="160" class="mt-3"></canvas>
+          <canvas id="yieldHist" height="160" class="mt-3"></canvas>
+          <canvas id="priceScoreScatter" height="160" class="mt-3"></canvas>
           <div class="row text-center mt-3 g-2">
             <div class="col-4"><div class="p-2 bg-light rounded"><div class="small text-muted">Avg Score</div><div id="avgScore" class="fw-bold">-</div></div></div>
             <div class="col-4"><div class="p-2 bg-light rounded"><div class="small text-muted">Avg Yield</div><div id="avgYield" class="fw-bold">-</div></div></div>
@@ -155,7 +157,7 @@
 
     const tbody = document.querySelector('#leadsTable tbody');
     const search = document.getElementById('search');
-    let chart, scatter, rows = [], currentSort = { key: 'score', dir: 'desc' };
+    let chart, scatter, yieldHistChart, priceScoreChart, rows = [], currentSort = { key: 'score', dir: 'desc' };
     let currentFiltered = [];
     const visibleCols = {score:true,address:true,type:true,price:true,local_avg_price:true,days_listed:true,yield_percent:true,location_score:true,condition_score:true,growth_score:true,contact:true,link:true};
 
@@ -239,6 +241,49 @@
       const scatterData = { datasets: [{ label: 'Yield vs Days', data: points, backgroundColor: '#2DB5E5' }] };
       if (scatter) scatter.destroy();
       scatter = new Chart(sc, { type: 'scatter', data: scatterData, options:{ scales:{ x:{ title:{display:true, text:'Days Listed'} }, y:{ title:{display:true, text:'Yield %'} } }, plugins:{legend:{display:false}} } });
+
+      // Yield histogram (0-20% in 1% buckets)
+      const yh = document.getElementById('yieldHist');
+      if (yh) {
+        const bins = new Array(21).fill(0);
+        data.forEach(l => { const y = Math.max(0, Math.min(20, Math.round(Number(l.yield_percent||0)))); bins[y]++; });
+        const labels = bins.map((_,i)=> `${i}%`);
+        if (yieldHistChart) yieldHistChart.destroy();
+        yieldHistChart = new Chart(yh, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Yield % Histogram', data: bins, backgroundColor: '#79C6E1' }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { maxRotation: 0, autoSkip: true } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      // Price vs Score scatter
+      const ps = document.getElementById('priceScoreScatter');
+      if (ps) {
+        const pts = data.map(l => ({ x:Number(l.score||0), y:Number(l.price||0) }));
+        if (priceScoreChart) priceScoreChart.destroy();
+        priceScoreChart = new Chart(ps, {
+          type: 'scatter',
+          data: { datasets: [{ label: 'Price vs Score', data: pts, backgroundColor: '#2D84A8' }] },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { title: { display: true, text: 'Score' }, min: 1, max: 5 },
+              y: { title: { display: true, text: 'Price ($)' }, beginAtZero: true }
+            }
+          }
+        });
+      }
     }
 
     async function load(){
