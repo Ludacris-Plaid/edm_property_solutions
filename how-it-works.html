@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works – AlbertaDeal Finder</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="light-mode">
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light navbar-scrolled">
+      <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="index.html">
+          <i class="fas fa-home me-2"></i> AlbertaDeal Finder
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li><a class="nav-link" href="index.html#properties">Properties</a></li>
+            <li><a class="nav-link" href="index.html#about">About</a></li>
+            <li><button id="theme-toggle" class="btn btn-link ms-2"><i class="fas fa-moon"></i></button></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero / Intro -->
+  <section class="py-5 tech-section">
+    <div class="section-bg"></div>
+    <div class="container tech-content">
+      <div class="row align-items-center">
+        <div class="col-lg-7">
+          <h1 class="fw-bold mb-3">The Opportunity Score</h1>
+          <p class="lead text-muted">Our proprietary scoring blends pricing efficiency, rental yield, location quality, condition, and local growth potential into a single 1–5 rating. It helps quickly prioritize properties with the best upside and fit.</p>
+        </div>
+        <div class="col-lg-5 text-lg-end">
+          <a href="index.html#properties" class="btn btn-primary btn-lg">View Featured Properties</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Score Formula -->
+  <section class="py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="tech-card p-4 h-100">
+            <div class="d-flex align-items-center mb-2"><i class="fas fa-flask text-primary me-2"></i><strong>Scoring Signals</strong></div>
+            <ul class="text-muted small mb-0">
+              <li>Price efficiency vs. local range</li>
+              <li>Rental yield relative to market maximum</li>
+              <li>Location quality (schools, transport, amenities)</li>
+              <li>Property condition and work required</li>
+              <li>Neighborhood growth potential</li>
+              <li>Bonuses for below‑market pricing and time on market</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="tech-card p-4 h-100">
+            <div class="d-flex align-items-center mb-2"><i class="fas fa-ranking-star text-primary me-2"></i><strong>1–5 Opportunity Score</strong></div>
+            <p class="text-muted small mb-2">We normalize inputs to 0–1, combine them with tuned weights, apply strategic bonuses, and map the result to an intuitive 1–5 rating.</p>
+            <div class="d-flex align-items-center gap-2">
+              <span class="score-badge"><i class="fas fa-ranking-star"></i> 4.4 <span class="score-stars">★★★★☆</span></span>
+              <span class="text-muted small">(example)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pipeline -->
+  <section class="py-5 stats-section">
+    <div class="container">
+      <h2 class="fw-bold text-center mb-4">From Data to Decisions</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="tech-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center mb-2"><i class="fas fa-database text-primary me-2 icon-animate"></i><strong>Ingest & Normalize</strong></div>
+            <p class="text-muted small mb-0">Courts, listings, tax and demographic datasets are unified to a common schema for clean, comparable features.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="tech-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center mb-2"><i class="fas fa-robot text-primary me-2 icon-animate"></i><strong>Model & Weights</strong></div>
+            <p class="text-muted small mb-0">A tuned ensemble blends statistical baselines with heuristics for transparent, actionable scoring.</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="tech-card p-4 h-100 hover-lift">
+            <div class="d-flex align-items-center mb-2"><i class="fas fa-chart-line text-primary me-2 icon-animate"></i><strong>Prioritize & Act</strong></div>
+            <p class="text-muted small mb-0">Scores drive shortlists, outreach, and simulations to estimate outcomes for all parties.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-dark text-white py-4 text-center">
+    <p class="small mb-0">© 2025 AlbertaDeal Finder. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+[
+{
+"id": 1,
+"address": "123 Maple St, Edmonton, AB",
+"price": 350000,
+"bedrooms": 3,
+"bathrooms": 2,
+"sqft": 1450,
+"days_listed": 12,
+"local_avg_price": 420000,
+"score": 3.5,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=1](https://picsum.photos/600/400?random=1)",
+"[https://picsum.photos/600/400?random=2](https://picsum.photos/600/400?random=2)",
+"[https://picsum.photos/600/400?random=3](https://picsum.photos/600/400?random=3)"
+]
+},
+{
+"id": 2,
+"address": "456 Oak Ave, Edmonton, AB",
+"price": 420000,
+"bedrooms": 4,
+"bathrooms": 3,
+"sqft": 2100,
+"days_listed": 45,
+"local_avg_price": 450000,
+"score": 4.2,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=4](https://picsum.photos/600/400?random=4)",
+"[https://picsum.photos/600/400?random=5](https://picsum.photos/600/400?random=5)",
+"[https://picsum.photos/600/400?random=6](https://picsum.photos/600/400?random=6)"
+],
+"image": ""
+},
+{
+"id": 3,
+"address": "789 Birch Rd, Edmonton, AB",
+"price": 310000,
+"bedrooms": 3,
+"bathrooms": 2,
+"sqft": 1300,
+"days_listed": 60,
+"local_avg_price": 380000,
+"yield_percent": 0,
+"location_score": 0,
+"condition_score": 0,
+"growth_score": 0,
+"score": 4.0,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=7](https://picsum.photos/600/400?random=7)",
+"[https://picsum.photos/600/400?random=8](https://picsum.photos/600/400?random=8)",
+"[https://picsum.photos/600/400?random=9](https://picsum.photos/600/400?random=9)"
+],
+"image": ""
+},
+{
+"id": 4,
+"address": "101 Pine Ln, Edmonton, AB",
+"price": 500000,
+"bedrooms": 5,
+"bathrooms": 4,
+"sqft": 3000,
+"days_listed": 15,
+"local_avg_price": 520000,
+"yield_percent": 0,
+"location_score": 0,
+"condition_score": 0,
+"growth_score": 0,
+"score": 3.0,
+"starred": false,
+"image_urls": [
+"[https://picsum.photos/600/400?random=10](https://picsum.photos/600/400?random=10)",
+"[https://picsum.photos/600/400?random=11](https://picsum.photos/600/400?random=11)",
+"[https://picsum.photos/600/400?random=12](https://picsum.photos/600/400?random=12)"
+]
+},
+{
+"id": 5,
+"address": "202 Cedar St, Edmonton, AB",
+"price": 280000,
+"bedrooms": 2,
+"bathrooms": 1,
+"sqft": 950,
+"days_listed": 50,
+"local_avg_price": 350000,
+"score": 4.1,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=13](https://picsum.photos/600/400?random=13)",
+"[https://picsum.photos/600/400?random=14](https://picsum.photos/600/400?random=14)",
+"[https://picsum.photos/600/400?random=15](https://picsum.photos/600/400?random=15)"
+]
+},
+{
+"id": 6,
+"address": "303 Spruce Dr, Edmonton, AB",
+"price": 390000,
+"bedrooms": 4,
+"bathrooms": 3,
+"sqft": 1800,
+"days_listed": 20,
+"local_avg_price": 410000,
+"score": 3.8,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=16](https://picsum.photos/600/400?random=16)",
+"[https://picsum.photos/600/400?random=17](https://picsum.photos/600/400?random=17)",
+"[https://picsum.photos/600/400?random=18](https://picsum.photos/600/400?random=18)"
+]
+},
+{
+"id": 7,
+"address": "404 Elm St, Edmonton, AB",
+"price": 320000,
+"bedrooms": 3,
+"bathrooms": 2,
+"sqft": 1400,
+"days_listed": 33,
+"local_avg_price": 380000,
+"score": 3.9,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=19](https://picsum.photos/600/400?random=19)",
+"[https://picsum.photos/600/400?random=20](https://picsum.photos/600/400?random=20)",
+"[https://picsum.photos/600/400?random=21](https://picsum.photos/600/400?random=21)"
+]
+},
+{
+"id": 8,
+"address": "505 Willow Rd, Edmonton, AB",
+"price": 450000,
+"bedrooms": 4,
+"bathrooms": 3,
+"sqft": 2000,
+"days_listed": 18,
+"local_avg_price": 470000,
+"score": 3.2,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=22](https://picsum.photos/600/400?random=22)",
+"[https://picsum.photos/600/400?random=23](https://picsum.photos/600/400?random=23)",
+"[https://picsum.photos/600/400?random=24](https://picsum.photos/600/400?random=24)"
+]
+},
+{
+"id": 9,
+"address": "606 Aspen Ave, Edmonton, AB",
+"price": 275000,
+"bedrooms": 2,
+"bathrooms": 1,
+"sqft": 900,
+"days_listed": 55,
+"local_avg_price": 340000,
+"score": 4.3,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=25](https://picsum.photos/600/400?random=25)",
+"[https://picsum.photos/600/400?random=26](https://picsum.photos/600/400?random=26)",
+"[https://picsum.photos/600/400?random=27](https://picsum.photos/600/400?random=27)"
+]
+},
+{
+"id": 10,
+"address": "707 Fir Ln, Edmonton, AB",
+"price": 480000,
+"bedrooms": 5,
+"bathrooms": 4,
+"sqft": 3100,
+"days_listed": 10,
+"local_avg_price": 500000,
+"score": 3.1,
+"starred": true,
+"image_urls": [
+"[https://picsum.photos/600/400?random=28](https://picsum.photos/600/400?random=28)",
+"[https://picsum.photos/600/400?random=29](https://picsum.photos/600/400?random=29)",
+"[https://picsum.photos/600/400?random=30](https://picsum.photos/600/400?random=30)"
+]
+}
+]

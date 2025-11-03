@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - AlbertaDeal Finder</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="dark-mode">
+    <nav class="navbar navbar-dark bg-gradient-dark">
+        <div class="container">
+            <a href="index.html" class="btn btn-outline-light btn-sm"><i class="fas fa-arrow-left"></i> Back to Site</a>
+            <div class="ms-auto d-flex align-items-center">
+                <span class="text-warning me-3">ADMIN MODE</span>
+                <button onclick="localStorage.removeItem('adminLoggedIn'); window.location='index.html'" class="btn btn-danger btn-sm">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h1 class="text-center text-danger mb-4">AI-SCRAPED LEAD VAULT</h1>
+        <div class="text-center mb-4">
+            <button id="refresh" class="btn btn-warning">Refresh</button>
+            <button id="export" class="btn btn-success ms-2">Export CSV</button>
+        </div>
+        <div id="leads-table"></div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('adminLoggedIn')) {
+            alert('UNAUTHORIZED. Redirecting...');
+            window.location = 'index.html';
+        }
+
+        const tableDiv = document.getElementById('leads-table');
+        async function loadLeads() {
+            try {
+                const res = await fetch('leads.json');
+                const leads = await res.json();
+                let html = `<table class="table table-dark table-striped"><thead><tr>
+                    <th>Address</th><th>Type</th><th>ARV</th><th>Distress</th><th>Contact</th><th>Action</th>
+                </tr></thead><tbody>`;
+                leads.forEach(l => {
+                    html += `<tr>
+                        <td>${l.address}</td>
+                        <td><span class="badge bg-danger">${l.type}</span></td>
+                        <td class="text-success">$${l.arv}K</td>
+                        <td class="text-warning">${l.distress}</td>
+                        <td>${l.contact}</td>
+                        <td><button class="btn btn-sm btn-outline-light" onclick="alert('SMS: ${l.contact}')">SMS</button></td>
+                    </tr>`;
+                });
+                html += `</tbody></table>`;
+                tableDiv.innerHTML = html;
+            } catch { tableDiv.innerHTML = '<div class="alert alert-danger">leads.json missing</div>'; }
+        }
+        document.getElementById('refresh').onclick = loadLeads;
+        document.getElementById('export').onclick = () => {
+            fetch('leads.json').then(r => r.json()).then(data => {
+                let csv = 'Address,Type,ARV,Distress,Contact\n';
+                data.forEach(d => csv += `"${d.address}",${d.type},${d.arv},"${d.distress}","${d.contact}"\n`);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv'}));
+                a.download = 'albertadeals_chaos.csv';
+                a.click();
+            });
+        };
+        loadLeads();
+    </script>
+</body>
+</html>
