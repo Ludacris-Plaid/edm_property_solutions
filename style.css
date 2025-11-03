@@ -5,10 +5,10 @@ h1, h2, h3, .navbar-brand { font-family: 'Space Grotesk', 'Plus Jakarta Sans', s
 body { transition: background 0.3s, color 0.3s; }
 
 :root {
-    --primary: #0d6efd; /* Bootstrap blue */
-    --dark: #212529;
-    --light: #f8f9fa;
-    --gray: #6c757d;
+    --primary: #577399; /* Bootstrap blue */
+    --dark: #495867;
+    --light: #F7F7FF;
+    --gray: #BDD5EA;
     --card-bg: #f5f7fb; /* subtle off-white */
 }
 
