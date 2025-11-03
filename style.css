@@ -36,8 +36,8 @@ body { transition: background 0.3s, color 0.3s; }
 .dark-mode .navbar-scrolled { background: rgba(17,24,39,0.9) !important; border-color: rgba(255,255,255,0.06); }
 
 /* Transparent over hero uses white text */
-.navbar.bg-transparent .navbar-brand, .navbar.bg-transparent .nav-link, .navbar.bg-transparent #theme-toggle { color: #fff !important; }
-.navbar.bg-transparent .btn.btn-outline-primary { color:#fff; border-color:#fff; }
+.navbar.bg-transparent .navbar-brand, .navbar.bg-transparent .nav-link, .navbar.bg-transparent #theme-toggle { color: #000 !important; }
+.navbar.bg-transparent .btn.btn-outline-primary { color:#000; border-color:#000; }
 .navbar.navbar-scrolled .navbar-brand, .navbar.navbar-scrolled .nav-link { color: var(--dark) !important; }
 
 .hero-video { min-height: 80vh; display: flex; align-items: center; position: relative; 
