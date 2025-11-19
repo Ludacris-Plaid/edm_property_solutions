@@ -6,11 +6,12 @@
     <title>Synapse Realty Systems – Built to Move Markets</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-    <link rel="icon" href="assets/logo.png" sizes="32x32" type="image/png">
-    <link rel="apple-touch-icon" href="assets/logo.png">
+    <!-- Font Awesome 6.5.2 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Orbitron:wght@500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
+    <link rel="icon" href="./assets/logo.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="./assets/logo.png">
     <meta name="theme-color" content="#2DB5E5">
 </head>
 <body class="light-mode">
@@ -18,17 +19,19 @@
         <nav class="navbar navbar-expand-lg navbar-light fixed-top">
             <div class="container">
                 <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
-                    <img src="assets/logo.svg" alt="Synapse Realty Systems" class="brand-logo" onerror="this.src='assets/logo.svg'">
+                    <img src="./assets/logo.svg" alt="Synapse Realty Systems" class="brand-logo" onerror="this.src='./assets/logo.png'">
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="nav">
                     <ul class="navbar-nav ms-auto align-items-center">
-                        <li><a class="nav-link nav-icon active" href="index.html" title="Home" aria-label="Home"><i class="fas fa-house"></i></a></li>
-                        <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fas fa-project-diagram"></i></a></li>
-                        <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fas fa-user-shield"></i></a></li>
-                        <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button></li>
+                        <li><a class="nav-link nav-icon active" href="index.html" title="Home" aria-label="Home"><i class="fa-solid fa-house"></i></a></li>
+                        <li><a class="nav-link nav-icon" href="about.html" title="About" aria-label="About"><i class="fa-solid fa-circle-info"></i></a></li>
+                        <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fa-solid fa-gears"></i></a></li>
+                        <li><a class="nav-link nav-icon" href="contact.html" title="Contact" aria-label="Contact"><i class="fa-solid fa-paper-plane"></i></a></li>
+                        <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
+                        <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fa-solid fa-moon"></i></button></li>
                     </ul>
                 </div>
             </div>
@@ -36,11 +39,17 @@
     </header>
 
     <!-- HERO WITH CITYSCAPE BACKGROUND -->
-    <section class="hero-video text-center position-relative overflow-hidden" style="--hero-image: url('assets/hero.jpg');">
+    <section class="hero-video text-center position-relative overflow-hidden" style="--hero-image: url('./assets/hero.jpg');">
+        <video class="hero-video-bg" autoplay muted loop playsinline preload="auto" poster="./assets/hero.jpg" onerror="this.parentNode.removeChild(this)">
+            <source src="./assets/219339_tiny.mp4" type="video/mp4">
+        </video>
         <div class="container position-relative z-3 py-5">
             <div class="hero-content">
-                <h1 class="display-4 fw-bold mb-4 text-white text-center">
-                    Synapse Realty Systems <br><span id="typewriter" class="accent typewrite hero-tagline"></span>
+                <div class="hero-logo-card">
+                    <img src="./assets/logo.svg" alt="Synapse Realty Systems" class="hero-logo" onerror="this.src='./assets/logo.png'">
+                </div>
+                <h1 class="hero-title fw-bold mb-4 text-white text-center">
+                    Synapse Realty Systems <br><span id="typewriter" class="typewrite hero-tagline"></span>
                 </h1>
                 <p class="lead fs-5 text-white mb-5 opacity-90">
                     Our proprietary systems and custom-trained AI identify off-market properties, probates, and motivated sellers—delivering exclusive, high-value opportunities before anyone else.

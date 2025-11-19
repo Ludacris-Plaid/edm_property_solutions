@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact – Synapse Realty Systems</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome 6.5.2 -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Orbitron:wght@500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/logo.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+  <meta name="theme-color" content="#2DB5E5">
+</head>
+<body class="light-mode">
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+      <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="index.html">
+          <img src="assets/logo.svg" alt="Synapse Realty Systems" class="brand-logo" onerror="this.src='assets/logo.png'">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav ms-auto align-items-center">
+            <li><a class="nav-link nav-icon" href="index.html" title="Home" aria-label="Home"><i class="fa-solid fa-house"></i></a></li>
+            <li><a class="nav-link nav-icon" href="about.html" title="About" aria-label="About"><i class="fa-solid fa-circle-info"></i></a></li>
+            <li><a class="nav-link nav-icon" href="how-it-works.html" title="How It Works" aria-label="How It Works"><i class="fa-solid fa-gears"></i></a></li>
+            <li><a class="nav-link nav-icon active" href="contact.html" title="Contact" aria-label="Contact"><i class="fa-solid fa-paper-plane"></i></a></li>
+            <li><a class="nav-link nav-icon" href="admin.html" title="Admin" aria-label="Admin"><i class="fa-solid fa-screwdriver-wrench"></i></a></li>
+            <li><button id="theme-toggle" class="btn btn-link ms-2" title="Toggle Theme" aria-label="Toggle Theme"><i class="fa-solid fa-moon"></i></button></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="with-fixed-nav">
+    <section class="contact-hero tech-section py-5">
+      <div class="section-bg"></div>
+      <div class="container tech-content py-4">
+        <div class="row align-items-center g-4">
+          <div class="col-lg-6">
+            <h1 class="hero-title mb-3">Contact Us</h1>
+            <p class="text-muted">Looking for exclusive opportunities or curious how our system works? Send us a note — we’ll get back fast.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge badge-glow">Response < 24h</span>
+              <span class="badge badge-glow">Partners Welcome</span>
+              <span class="badge badge-glow">Investors</span>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="contact-card p-4">
+              <form class="contact-form" id="contactForm" action="/contact-submit" method="POST">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" id="name" name="name" class="form-control" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                  </div>
+                  <div class="col-12">
+                    <label for="phone" class="form-label">Phone</label>
+                    <input type="tel" id="phone" name="phone" class="form-control" placeholder="Optional">
+                  </div>
+                  <div class="col-12">
+                    <label for="message" class="form-label">Message</label>
+                    <textarea id="message" name="message" class="form-control" required></textarea>
+                  </div>
+                </div>
+                <div class="d-grid mt-3">
+                  <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-5 section-base reveal">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="stat-card p-4 h-100">
+              <div class="d-flex align-items-center mb-2"><i class="fas fa-location-dot text-primary me-2"></i><strong>HQ</strong></div>
+              <p class="text-muted mb-0">Edmonton, AB</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card p-4 h-100">
+              <div class="d-flex align-items-center mb-2"><i class="fas fa-shield text-primary me-2"></i><strong>Privacy</strong></div>
+              <p class="text-muted mb-0">We never sell data. Communications remain confidential.</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stat-card p-4 h-100">
+              <div class="d-flex align-items-center mb-2"><i class="fas fa-handshake text-primary me-2"></i><strong>Partnerships</strong></div>
+              <p class="text-muted mb-0">Brokerages and investors — reach out to collaborate.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="py-4 site-footer">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+      <p class="small mb-0">&copy; 2025 Indications Media</p>
+      <div class="d-flex align-items-center gap-2">
+        <span class="small opacity-75">Built With:</span>
+        <img src="assets/vs.png" alt="VS Code" style="height:20px;width:auto">
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="script.js"></script>
+  <script>
+    (function(){
+      const form = document.getElementById('contactForm');
+      if (!form) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const data = new FormData(form);
+        btn.disabled = true; btn.textContent = 'Sending...';
+        try {
+          const res = await fetch(form.action, { method: 'POST', body: data });
+          const json = await res.json().catch(()=>({}));
+          if (res.ok && json.ok) {
+            alert('Thanks! Your message has been sent.');
+            form.reset();
+          } else {
+            alert('Unable to send right now. Please try again later.');
+          }
+        } catch(err) {
+          alert('Network error. Please try again.');
+        } finally {
+          btn.disabled = false; btn.textContent = 'Send Message';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

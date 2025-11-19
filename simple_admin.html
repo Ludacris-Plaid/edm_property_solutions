@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Importer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 20px; }
+    .property-card { margin-bottom: 15px; }
+    .property-image { height: 150px; object-fit: cover; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">Property Importer</h1>
+    
+    <!-- JSON Upload Section -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Import Properties</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="json-upload" class="form-label">Select JSON File</label>
+          <input class="form-control" type="file" id="json-upload" accept=".json">
+        </div>
+        <button id="import-json" class="btn btn-primary">Import Properties</button>
+        <button id="delete-all" class="btn btn-danger">Delete All Data</button>
+        <div id="import-status" class="mt-2"></div>
+      </div>
+    </div>
+
+    <!-- Properties Grid -->
+    <div id="properties-grid" class="row">
+      <!-- Properties will be displayed here -->
+    </div>
+  </div>
+
+  <script>
+    // Global variables
+    let properties = [];
+    
+    // DOM Elements
+    const importBtn = document.getElementById('import-json');
+    const deleteBtn = document.getElementById('delete-all');
+    const fileInput = document.getElementById('json-upload');
+    const statusEl = document.getElementById('import-status');
+    const propertiesGrid = document.getElementById('properties-grid');
+
+    // Initialize the application
+    function init() {
+      // Load saved properties from localStorage
+      const savedProperties = localStorage.getItem('properties');
+      if (savedProperties) {
+        properties = JSON.parse(savedProperties);
+        renderProperties();
+      }
+      
+      // Set up event listeners
+      importBtn.addEventListener('click', handleImport);
+      deleteBtn.addEventListener('click', handleDeleteAll);
+    }
+
+    // Handle JSON file import
+    function handleImport() {
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        showStatus('Please select a JSON file first', 'error');
+        return;
+      }
+      
+      showStatus('Processing...', 'info');
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        try {
+          // First, try to parse the JSON as-is
+          let jsonData;
+          try {
+            jsonData = JSON.parse(e.target.result);
+          } catch (parseError) {
+            // If parsing fails, try to clean up the JSON string
+            console.warn('Initial parse failed, attempting to clean JSON...');
+            const cleanedJson = cleanJsonString(e.target.result);
+            jsonData = JSON.parse(cleanedJson);
+          }
+          
+          if (!jsonData) {
+            throw new Error('No data found in the JSON file');
+          }
+          
+          processProperties(jsonData);
+        } catch (error) {
+          showStatus('Error processing JSON: ' + error.message, 'error');
+          console.error('JSON processing error:', error);
+        }
+      };
+      
+      // Helper function to clean JSON strings
+      function cleanJsonString(jsonString) {
+        // Remove any BOM (Byte Order Mark) characters
+        let cleaned = jsonString.replace(/^\uFEFF/, '');
+        
+        // Remove any control characters
+        cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+        
+        // Remove any trailing commas before ] or }
+        cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+        
+        // Fix any unescaped quotes within strings
+        cleaned = cleaned.replace(/([^\\])\\"/g, '$1\\"');
+        
+        // Fix any single quotes that should be double quotes
+        cleaned = cleaned.replace(/'/g, '"');
+        
+        // Remove comments (both // and /* */)
+        cleaned = cleaned.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '');
+        
+        return cleaned;
+      }
+      
+      reader.onerror = function() {
+        showStatus('Error reading file', 'error');
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // Process imported properties
+    function processProperties(data) {
+      try {
+        // Convert to array if single object
+        const importedProperties = Array.isArray(data) ? data : [data];
+        
+        // Process each property
+        const newProperties = importedProperties.map(prop => ({
+          id: prop.id || 'prop-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          address: prop.address || 'Unknown Address',
+          price: formatPrice(prop.price),
+          price_value: parsePrice(prop.price),
+          beds: prop.beds || prop.bedrooms || 0,
+          baths: prop.baths || prop.bathrooms || 0,
+          sqft: prop.sqft || 0,
+          image_url: getFirstImage(prop),
+          detail_url: prop.detail_url || prop.link || '#',
+          type: prop.type || 'Residential',
+          imported_at: new Date().toISOString()
+        }));
+        
+        // Add new properties to the list
+        properties = [...properties, ...newProperties];
+        
+        // Save to localStorage
+        saveProperties();
+        
+        // Update UI
+        renderProperties();
+        showStatus(`Successfully imported ${newProperties.length} properties. Total: ${properties.length}`, 'success');
+        
+      } catch (error) {
+        showStatus('Error processing properties: ' + error.message, 'error');
+        console.error('Process properties error:', error);
+      }
+    }
+    
+    // Format price for display
+    function formatPrice(price) {
+      if (price === undefined || price === null) return 'N/A';
+      if (typeof price === 'number') return '$' + price.toLocaleString();
+      if (typeof price === 'string') {
+        // Remove any non-numeric characters except decimal point and minus
+        const num = parseFloat(price.replace(/[^0-9.-]+/g, ''));
+        return isNaN(num) ? 'N/A' : '$' + num.toLocaleString();
+      }
+      return 'N/A';
+    }
+    
+    // Parse price to number
+    function parsePrice(price) {
+      if (price === undefined || price === null) return 0;
+      if (typeof price === 'number') return price;
+      if (typeof price === 'string') {
+        return parseFloat(price.replace(/[^0-9.-]+/g, '')) || 0;
+      }
+      return 0;
+    }
+    
+    // Get first image URL from property
+    function getFirstImage(prop) {
+      if (prop.image_url) return prop.image_url;
+      if (Array.isArray(prop.image_urls) && prop.image_urls.length > 0) return prop.image_urls[0];
+      if (prop.images && prop.images.length > 0) return prop.images[0];
+      return 'https://via.placeholder.com/300x200?text=No+Image';
+    }
+    
+    // Render properties in the grid
+    function renderProperties() {
+      if (!properties || properties.length === 0) {
+        propertiesGrid.innerHTML = '<div class="col-12"><p>No properties found. Import a JSON file to get started.</p></div>';
+        return;
+      }
+      
+      propertiesGrid.innerHTML = properties.map(prop => `
+        <div class="col-md-4 col-lg-3 mb-4">
+          <div class="card property-card h-100">
+            <img src="${prop.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" 
+                 class="card-img-top property-image" 
+                 alt="${prop.address}" 
+                 onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Available'">
+            <div class="card-body">
+              <h5 class="card-title">${prop.address || 'Unknown Address'}</h5>
+              <p class="card-text">
+                <strong>Price:</strong> ${prop.price || 'N/A'}<br>
+                <strong>Beds:</strong> ${prop.beds || 0} | 
+                <strong>Baths:</strong> ${prop.baths || 0}<br>
+                <strong>Sqft:</strong> ${prop.sqft ? prop.sqft.toLocaleString() : 'N/A'}
+              </p>
+              ${prop.detail_url !== '#' ? `<a href="${prop.detail_url}" target="_blank" class="btn btn-primary btn-sm">View Details</a>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Handle delete all
+    function handleDeleteAll() {
+      if (confirm('Are you sure you want to delete all properties? This cannot be undone.')) {
+        properties = [];
+        saveProperties();
+        renderProperties();
+        showStatus('All properties have been deleted.', 'success');
+      }
+    }
+    
+    // Save properties to localStorage
+    function saveProperties() {
+      localStorage.setItem('properties', JSON.stringify(properties));
+    }
+    
+    // Show status message
+    function showStatus(message, type = 'info') {
+      if (!statusEl) return;
+      
+      statusEl.textContent = message;
+      statusEl.className = 'mt-2';
+      
+      // Remove existing status classes
+      ['text-info', 'text-success', 'text-danger'].forEach(cls => {
+        statusEl.classList.remove(cls);
+      });
+      
+      // Add appropriate class based on type
+      if (type === 'error') {
+        statusEl.classList.add('text-danger');
+      } else if (type === 'success') {
+        statusEl.classList.add('text-success');
+      } else {
+        statusEl.classList.add('text-info');
+      }
+    }
+    
+    // Initialize the app when the DOM is loaded
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

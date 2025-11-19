@@ -2,6 +2,7 @@ import sys
 import json
 import asyncio
 import random
+import re
 import httpx
 from parsel import Selector
 
@@ -16,6 +17,8 @@ BASE_HEADERS = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "referer": "https://www.zillow.com/",
     "origin": "https://www.zillow.com",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "same-origin",
 }
 
 
@@ -29,7 +32,16 @@ def build_address(p: dict) -> str:
 
 async def fetch_page(url: str, cookies: dict, proxies: dict | None, user_agent: str) -> str:
     headers = {**BASE_HEADERS, "user-agent": user_agent}
+    # First attempt with HTTP/2
     async with httpx.AsyncClient(http2=True, headers=headers, cookies=cookies, timeout=20, proxies=proxies) as client:
+        resp = await client.get(url)
+        if resp.status_code == 200:
+            return resp.text
+        # Retry once on 403 with HTTP/1.1 and tweaked headers / UA
+    alt_headers = {**headers, "accept": "*/*"}
+    alt_ua = random.choice([ua for ua in UA_POOL if ua != user_agent] or UA_POOL)
+    alt_headers["user-agent"] = alt_ua
+    async with httpx.AsyncClient(http2=False, headers=alt_headers, cookies=cookies, timeout=25, proxies=proxies) as client:
         resp = await client.get(url)
         if resp.status_code != 200:
             raise RuntimeError(f"Failed to fetch {url}: HTTP {resp.status_code}")
@@ -47,6 +59,46 @@ def parse_property_data(page_content: str) -> dict:
     # Take first key
     key = next(iter(gdp_client_cache))
     return gdp_client_cache[key]["property"]
+
+
+def parse_search_results(page_content: str) -> list[dict]:
+    sel = Selector(page_content)
+    raw = sel.css("script#__NEXT_DATA__::text").get()
+    if not raw:
+        raise RuntimeError("Couldn't find __NEXT_DATA__ block")
+    data = json.loads(raw)
+    try:
+        cat1 = data["props"]["pageProps"]["searchPageState"]["cat1"]["searchResults"]
+    except Exception as e:
+        raise RuntimeError("Couldn't locate search results in __NEXT_DATA__") from e
+    results = cat1.get("listResults") or []
+    rows: list[dict] = []
+    for it in results:
+        addr = it.get("address") or it.get("addressStreet") or ""
+        price = it.get("unformattedPrice")
+        if price is None:
+            # try to parse from formatted string
+            ptxt = it.get("price") or ""
+            m = re.search(r"[0-9][0-9,\.]+", ptxt)
+            price = int(m.group(0).replace(",", "")) if m else 0
+        days = it.get("daysOnZillow") or it.get("timeOnZillow")
+        link = it.get("detailUrl") or ""
+        if link.startswith("/"):
+            link = "https://www.zillow.com" + link
+        rows.append({
+            "address": addr,
+            "type": it.get("hdpData", {}).get("homeInfo", {}).get("homeType") or it.get("homeType") or "",
+            "price": price or 0,
+            "local_avg_price": None,
+            "days_listed": days or None,
+            "yield_percent": None,
+            "location_score": None,
+            "condition_score": None,
+            "growth_score": None,
+            "contact": "",
+            "link": link,
+        })
+    return rows
 
 
 def map_to_rows(prop: dict, url: str) -> list[dict]:
@@ -92,14 +144,16 @@ async def main():
 
         proxies = None
         if proxy_endpoint:
-            # Build proxy URL with optional auth
-            auth = f"{proxy_user}:{proxy_pass}@" if proxy_user or proxy_pass else ""
-            # Ensure scheme present
-            endpoint = proxy_endpoint
-            if not endpoint.startswith("http://") and not endpoint.startswith("https://"):
+            # Build proxy URL with optional auth; support http(s) and socks5 schemes
+            endpoint = proxy_endpoint.strip()
+            has_scheme = re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", endpoint) is not None
+            if not has_scheme:
                 endpoint = "http://" + endpoint
-            proxy_url = endpoint.replace("://", f"://{auth}") if auth else endpoint
-            proxies = {"http": proxy_url, "https": proxy_url}
+            if proxy_user or proxy_pass:
+                endpoint = endpoint.replace("://", f"://{proxy_user}:{proxy_pass}@", 1)
+            proxy_url = endpoint
+            # httpx accepts a single string for all protocols
+            proxies = proxy_url
 
         # Build list of URLs
         urls: list[str] = []
@@ -121,9 +175,18 @@ async def main():
         for i, u in enumerate(ordered_urls):
             ua = random.choice(UA_POOL)
             html = await fetch_page(u, cookies, proxies, ua)
-            prop = parse_property_data(html)
-            rows = map_to_rows(prop, u)
-            results.extend(rows)
+            page_rows: list[dict] = []
+            try:
+                # Try property details first
+                prop = parse_property_data(html)
+                page_rows = map_to_rows(prop, u)
+            except Exception:
+                # Fallback to search results parsing
+                try:
+                    page_rows = parse_search_results(html)
+                except Exception as e:
+                    raise
+            results.extend(page_rows)
             # Delay if requested and more to go
             if delay_ms and i < len(ordered_urls) - 1:
                 try:
