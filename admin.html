@@ -143,6 +143,139 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
   </div>
 </div>
 
+<!-- Deal Simulator + Live Stats -->
+<div class="container py-3">
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fa-solid fa-calculator me-2 text-primary"></i>Deal Simulator</h5>
+          <small class="text-muted">Quickly underwrite a deal</small>
+        </div>
+        <div class="card-body">
+          <form id="dealSimForm" class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Price</label>
+              <input id="sim_price" type="number" class="form-control" placeholder="350000" value="350000">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Rent (Monthly)</label>
+              <input id="sim_rent" type="number" class="form-control" placeholder="2300" value="2300">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Down %</label>
+              <input id="sim_down" type="number" class="form-control" placeholder="20" value="20">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Rate % (APR)</label>
+              <input id="sim_rate" type="number" step="0.01" class="form-control" placeholder="6.5" value="6.5">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Term (yrs)</label>
+              <input id="sim_term" type="number" class="form-control" placeholder="30" value="30">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Taxes /mo</label>
+              <input id="sim_taxes" type="number" class="form-control" placeholder="250" value="250">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Insurance /mo</label>
+              <input id="sim_ins" type="number" class="form-control" placeholder="110" value="110">
+            </div>
+            <div class="col-4">
+              <label class="form-label">HOA /mo</label>
+              <input id="sim_hoa" type="number" class="form-control" placeholder="0" value="0">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Vacancy %</label>
+              <input id="sim_vac" type="number" class="form-control" placeholder="5" value="5">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Maint. %</label>
+              <input id="sim_maint" type="number" class="form-control" placeholder="8" value="8">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Mgmt %</label>
+              <input id="sim_mgmt" type="number" class="form-control" placeholder="8" value="8">
+            </div>
+            <div class="col-6">
+              <label class="form-label">ARV</label>
+              <input id="sim_arv" type="number" class="form-control" placeholder="400000" value="400000">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Rehab</label>
+              <input id="sim_rehab" type="number" class="form-control" placeholder="25000" value="25000">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Closing % (buy)</label>
+              <input id="sim_closing" type="number" class="form-control" placeholder="3" value="3">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Desired Profit</label>
+              <input id="sim_profit" type="number" class="form-control" placeholder="15000" value="15000">
+            </div>
+          </form>
+          <hr>
+          <div class="row g-3" id="dealSimOutputs">
+            <div class="col-6">
+              <div class="p-3 rounded border" id="out_pi"><div class="text-muted">P&I</div><div class="fs-5 fw-bold">$0</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border" id="out_piti"><div class="text-muted">PITI</div><div class="fs-5 fw-bold">$0</div></div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 rounded border" id="out_dscr"><div class="text-muted">DSCR</div><div class="fs-5 fw-bold">0.00</div></div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 rounded border" id="out_cap"><div class="text-muted">Cap Rate</div><div class="fs-5 fw-bold">0.0%</div></div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 rounded border" id="out_coc"><div class="text-muted">Cash-on-Cash</div><div class="fs-5 fw-bold">0.0%</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border" id="out_cf"><div class="text-muted">Monthly Cash Flow</div><div class="fs-5 fw-bold">$0</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border" id="out_mao"><div class="text-muted">Max Offer (70% Rule)</div><div class="fs-5 fw-bold">$0</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fa-solid fa-chart-line me-2 text-success"></i>Live Stats</h5>
+          <small class="text-muted">Based on current table</small>
+        </div>
+        <div class="card-body">
+          <div class="row g-3" id="liveStats">
+            <div class="col-6">
+              <div class="p-3 rounded border"><div class="text-muted">Total Leads</div><div id="stat_count" class="fs-4 fw-bold">0</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border"><div class="text-muted">Avg Score</div><div id="stat_avgscore" class="fs-4 fw-bold">0</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border"><div class="text-muted">Avg Price</div><div id="stat_avgprice" class="fs-4 fw-bold">$0</div></div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded border"><div class="text-muted">Median Minutes</div><div id="stat_medmins" class="fs-4 fw-bold">0</div></div>
+            </div>
+            <div class="col-12">
+              <div class="p-3 rounded border">
+                <div class="text-muted mb-1">Score Sparkline</div>
+                <svg id="stat_spark" viewBox="0 0 200 40" width="100%" height="40"></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -416,6 +549,7 @@ function filterAndRender(){
     state.filtered.sort((a,b)=>Number(b.score||0)-Number(a.score||0));
   }
   renderTable();
+  renderLiveStats();
 }
 
 function renderTable(){
@@ -442,7 +576,8 @@ function renderTable(){
       <td class="text-center"><span class="badge score-badge" style="background:${bg}; color:${textColor}; border:${border}; box-shadow:${shadow};">${escapeHtml(String(sc))}</span></td>
       <td><div class="d-flex flex-wrap gap-1">${reasonsHTML||'<span class="text-muted">—</span>'}</div></td>
       <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="window.open('${escapeAttr(p.detailUrl||'#')}','_blank')">View</button>
+        <button class="btn btn-sm btn-outline-warning me-1" onclick="prefillSimulator('${escapeAttr(p._id)}')">Sim</button>
+        <button class="btn btn-sm btn-outline-primary me-1" onclick="window.open('${escapeAttr(p.detailUrl||'#')}','_blank')">View</button>
         <button class="btn btn-sm btn-outline-danger" onclick="removeLead('${escapeAttr(p._id)}')">Delete</button>
       </td>
     `;
@@ -511,6 +646,115 @@ function sendTopToCarousel(){
     localStorage.setItem('eps_admin_properties', JSON.stringify(mapped));
     toast(`Sent ${mapped.length} to homepage carousel`, 'success');
   }catch(e){ console.warn(e); toast('Failed to send to carousel','danger'); }
+}
+
+function prefillsFrom(p){
+  const $ = (id)=>document.getElementById(id);
+  if(!$('sim_price')) return;
+  $('sim_price').value = Number(p.price||0) || 0;
+  $('sim_rent').value = Math.max(0, Math.round((Number(p.estimatedRent||0) || 0)));
+  $('sim_arv').value = Number(p.price||0) || 0;
+}
+
+function prefillSimulator(id){
+  try{
+    const p = state.properties.find(x=>x._id===id);
+    if(!p){ toast('Lead not found','warning'); return; }
+    prefillsFrom(p);
+    simulateDeal();
+    toast('Simulator prefilled from row','success');
+    document.getElementById('sim_price').scrollIntoView({behavior:'smooth', block:'center'});
+  }catch(e){ console.warn(e); }
+}
+
+function simulateDeal(){
+  const $ = (id)=>document.getElementById(id);
+  const price = Number($('sim_price').value)||0;
+  const rent = Number($('sim_rent').value)||0;
+  const downPct = (Number($('sim_down').value)||0)/100;
+  const rate = (Number($('sim_rate').value)||0)/100/12;
+  const termY = Number($('sim_term').value)||30;
+  const n = termY*12;
+  const taxes = Number($('sim_taxes').value)||0;
+  const ins = Number($('sim_ins').value)||0;
+  const hoa = Number($('sim_hoa').value)||0;
+  const vacPct = (Number($('sim_vac').value)||0)/100;
+  const maintPct = (Number($('sim_maint').value)||0)/100;
+  const mgmtPct = (Number($('sim_mgmt').value)||0)/100;
+  const arv = Number($('sim_arv').value)||0;
+  const rehab = Number($('sim_rehab').value)||0;
+  const closingBuyPct = (Number($('sim_closing').value)||0)/100;
+  const desiredProfit = Number($('sim_profit').value)||0;
+
+  const down = price*downPct;
+  const loan = Math.max(0, price - down);
+  const pi = rate>0 ? (loan*rate*Math.pow(1+rate,n))/(Math.pow(1+rate,n)-1) : (loan/n);
+  const piti = pi + taxes + ins + hoa;
+
+  const gross = rent;
+  const vacancy = gross*vacPct;
+  const maint = gross*maintPct;
+  const mgmt = gross*mgmtPct;
+  const noiMonthly = gross - vacancy - taxes - ins - hoa - maint - mgmt;
+  const capRate = price>0 ? (noiMonthly*12/price)*100 : 0;
+  const dscr = pi>0 ? (noiMonthly/pi) : 0;
+
+  const cashInvested = down + rehab + (price*closingBuyPct);
+  const cashFlow = (gross - vacancy) - (piti + maint + mgmt);
+  const coc = cashInvested>0 ? (cashFlow*12/cashInvested)*100 : 0;
+
+  const mao = Math.max(0, (arv*0.70) - rehab - desiredProfit);
+
+  const fmt=$=> isFinite($)? (typeof $==='number'? $: Number($)) : 0;
+  const money = v=>`$${Math.round(fmt(v)).toLocaleString()}`;
+  document.getElementById('out_pi').querySelector('.fw-bold').textContent = money(pi);
+  document.getElementById('out_piti').querySelector('.fw-bold').textContent = money(piti);
+  document.getElementById('out_dscr').querySelector('.fw-bold').textContent = (Math.round(dscr*100)/100).toFixed(2);
+  document.getElementById('out_cap').querySelector('.fw-bold').textContent = `${(Math.round(capRate*10)/10).toFixed(1)}%`;
+  document.getElementById('out_coc').querySelector('.fw-bold').textContent = `${(Math.round(coc*10)/10).toFixed(1)}%`;
+  document.getElementById('out_cf').querySelector('.fw-bold').textContent = money(cashFlow);
+  document.getElementById('out_mao').querySelector('.fw-bold').textContent = money(mao);
+}
+
+function initDealSim(){
+  const form=document.getElementById('dealSimForm');
+  if(!form) return;
+  form.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>simulateDeal());
+    inp.addEventListener('change',()=>simulateDeal());
+  });
+  simulateDeal();
+}
+
+function renderLiveStats(){
+  try{
+    const elC=document.getElementById('stat_count');
+    if(!elC) return; // stats panel not present
+    const items = state.filtered && state.filtered.length ? state.filtered : state.properties;
+    const count = items.length;
+    const avgScore = count? (items.reduce((a,b)=>a+Number(b.score||0),0)/count) : 0;
+    const prices = items.map(p=>Number(p.price||0)).filter(x=>x>0).sort((a,b)=>a-b);
+    const avgPrice = prices.length? (prices.reduce((a,b)=>a+b,0)/prices.length) : 0;
+    const mins = items.map(p=>Number(p.minutesOnMarket ?? (Number(p.daysOnMarket||0)*24*60))).filter(x=>x>=0).sort((a,b)=>a-b);
+    const medMins = mins.length? (mins[Math.floor(mins.length/2)]) : 0;
+
+    elC.textContent = count.toLocaleString();
+    document.getElementById('stat_avgscore').textContent = (Math.round(avgScore*10)/10).toFixed(1);
+    document.getElementById('stat_avgprice').textContent = `$${Math.round(avgPrice).toLocaleString()}`;
+    document.getElementById('stat_medmins').textContent = (medMins||0).toLocaleString();
+
+    const spark = document.getElementById('stat_spark');
+    const scores = items.slice(0,50).map(p=>Number(p.score||0));
+    const max = Math.max(100, ...scores, 1);
+    const step = 200/Math.max(1, scores.length-1);
+    let d = '';
+    scores.forEach((s,i)=>{
+      const x = i*step;
+      const y = 40 - (s/max)*40;
+      d += (i===0?`M ${x},${y}`:` L ${x},${y}`);
+    });
+    spark.innerHTML = `<path d="${d}" fill="none" stroke="#22c55e" stroke-width="2"/><circle r="3" cx="${scores.length? (scores.length-1)*step:0}" cy="${scores.length? 40-(scores[scores.length-1]/max)*40:40}" fill="#22c55e"/>`;
+  }catch(e){ console.warn('stats render failed', e); }
 }
 
 function parseCommand(input){
@@ -593,6 +837,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   // existing init
   loadData(); filterAndRender();
+  initDealSim();
   addMessage('bot','Ready! Try: <code>fetch zillow for Edmonton AB</code>');
 });
 </script>
