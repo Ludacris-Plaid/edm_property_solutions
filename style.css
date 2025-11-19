@@ -78,6 +78,12 @@ h1, h2, h3, .navbar-brand { font-family: var(--font-display); letter-spacing: .3
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+    /* Tooltip defaults */
+    --tooltip-bg: rgba(10, 15, 20, 0.92);
+    --tooltip-text: #ffffff;
+    --tooltip-border: rgba(255, 255, 255, 0.15);
+    --tooltip-shadow: 0 8px 20px rgba(0,0,0,0.25);
 }
 
 /* Dark Theme */
@@ -309,7 +315,20 @@ pre, code {
   .thumb { width: 56px; height: 40px; }
   .card-header .d-flex { flex-wrap: wrap; }
   #searchBox { width: 100% !important; }
+
+  /* Admin table: reduce scroll, make effectively wider */
+  .card .table-responsive { margin-left: -12px; margin-right: -12px; }
+  .admin-table th, .admin-table td { padding: .45rem .5rem; font-size: .92rem; }
+  .admin-table .thumb { width: 52px; height: 38px; }
+  /* Hide low-priority columns on mobile: Baths (5), Reasons (8). Keep Minutes visible. */
+  .admin-table th:nth-child(5), .admin-table td:nth-child(5),
+  .admin-table th:nth-child(8), .admin-table td:nth-child(8) { display: none; }
+  /* Slightly tighter actions */
+  .admin-table td:last-child .btn { padding: .2rem .4rem; font-size: .8rem; }
 }
+
+/* Keyword highlight */
+mark.kw-hit { background: #fff3cd; color: inherit; padding: 0 .15em; border-radius: 3px; }
 
 /* Extra-small/mobile adjustments */
 @media (max-width: 576px) {
@@ -582,7 +601,11 @@ pre, code {
 .navbar .nav-link:hover { color: var(--primary) !important; }
 .dark-mode .navbar .nav-link:hover { color: var(--accent) !important; }
 .navbar-toggler-icon { filter: none; }
-.dark-mode .navbar .navbar-toggler-icon { filter: invert(1) brightness(1.4); }
+.dark-mode .navbar .navbar-toggler-icon {
+  /* Force white bars for better contrast in dark mode */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.95)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+  filter: none !important;
+}
 .navbar.bg-transparent #theme-toggle i { color: currentColor; }
 .navbar-brand { height: calc(var(--nav-height) - 8px); }
 .brand-logo {max-width: clamp(220px, 30vw, 560px); height: 160px; width: auto; display:block; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15)); object-fit: contain; }
@@ -608,6 +631,55 @@ pre, code {
 .dark-mode .nav-icon.active, .dark-mode .nav-icon.active i { color: var(--accent) !important; }
 .proudly { font-size: .85rem; color: var(--muted); display:inline-flex; align-items:center; gap:.35rem; }
 .proudly img { height: 14px; width:auto; border-radius:2px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+
+/* Nav icon tooltips (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+  .navbar .nav-link.nav-icon { position: relative; }
+  .navbar .nav-link.nav-icon::after {
+    content: attr(aria-label);
+    position: absolute;
+    left: 50%;
+    bottom: -34px;
+    transform: translate(-50%, 4px);
+    opacity: 0;
+    pointer-events: none;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    border: 1px solid var(--tooltip-border);
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.2;
+    box-shadow: var(--tooltip-shadow);
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 2000;
+  }
+  .navbar .nav-link.nav-icon[aria-label=""]::after {
+    content: attr(title);
+  }
+  .navbar .nav-link.nav-icon::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -8px;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--tooltip-bg);
+    opacity: 0; pointer-events: none;
+    transition: opacity .15s ease;
+    z-index: 1999;
+  }
+  .navbar .nav-link.nav-icon:hover::after,
+  .navbar .nav-link.nav-icon:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  .navbar .nav-link.nav-icon:hover::before,
+  .navbar .nav-link.nav-icon:focus-visible::before { opacity: 1; }
+}
 
 /* Footer */
 .site-footer { font-family: 'Sora', system-ui, -apple-system, sans-serif; letter-spacing:.2px; }

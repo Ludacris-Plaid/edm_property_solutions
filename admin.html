@@ -118,7 +118,7 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 admin-table">
               <thead class="table-light">
                 <tr>
                   <th>Photo</th>
@@ -268,7 +268,13 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
       <div class="card h-100">
         <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
           <h5 class="mb-0"><i class="fa-solid fa-chart-line me-2 text-success"></i>Live Stats</h5>
-          <small class="text-muted">Based on current table</small>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">Stats on:</small>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Stats scope">
+              <button id="statScopeVisible" type="button" class="btn btn-outline-secondary active">Visible</button>
+              <button id="statScopeAll" type="button" class="btn btn-outline-secondary">All</button>
+            </div>
+          </div>
         </div>
         <div class="card-body">
           <div class="row g-3" id="liveStats">
@@ -276,7 +282,16 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
               <div class="p-3 rounded border"><div class="text-muted">Total Leads</div><div id="stat_count" class="fs-4 fw-bold">0</div></div>
             </div>
             <div class="col-6">
-              <div class="p-3 rounded border"><div class="text-muted">Avg Score</div><div id="stat_avgscore" class="fs-4 fw-bold">0</div></div>
+              <div class="p-3 rounded border">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="text-muted">Avg Score</div>
+                  <small class="text-muted">Gauge</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <svg id="stat_gauge" viewBox="0 0 120 60" width="100%" height="60" preserveAspectRatio="xMidYMid meet"></svg>
+                  <div id="stat_avgscore" class="fs-4 fw-bold ms-auto">0</div>
+                </div>
+              </div>
             </div>
             <div class="col-6">
               <div class="p-3 rounded border"><div class="text-muted">Avg Price</div><div id="stat_avgprice" class="fs-4 fw-bold">$0</div></div>
@@ -288,6 +303,33 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
               <div class="p-3 rounded border">
                 <div class="text-muted mb-1">Score Sparkline</div>
                 <svg id="stat_spark" viewBox="0 0 200 40" width="100%" height="40"></svg>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="p-3 rounded border">
+                <div class="text-muted mb-1">Score Tiers</div>
+                <svg id="stat_tiers" viewBox="0 0 200 60" width="100%" height="60"></svg>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="p-3 rounded border">
+                <div class="text-muted mb-1">Price Distribution</div>
+                <svg id="stat_pricehist" viewBox="0 0 200 60" width="100%" height="60"></svg>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="p-3 rounded border">
+                <div class="text-muted mb-1">Top Cities</div>
+                <div id="stat_topcities" class="small"></div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="p-3 rounded border">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="text-muted">Top 5 Leads</div>
+                  <small class="text-muted">by Score</small>
+                </div>
+                <div id="stat_top5" class="d-flex flex-column gap-2"></div>
               </div>
             </div>
           </div>
@@ -309,7 +351,8 @@ const state = {
   isProcessing: false,
   sortMode: 'score_desc',
   currentPage: 1,
-  pageSize: 15
+  pageSize: 15,
+  statsScope: 'visible'
 };
 
 function getApiBase(){
@@ -321,32 +364,39 @@ function getApiBase(){
 function calculateScore(p) {
   let score = 0;
   const reasons = [];
-  const dom = Number(p.daysOnMarket || 0);
-  if (dom >= 240) { score += 70; reasons.push({text: `${dom}d on market`, color:'bg-danger text-white'}); }
-  else if (dom >= 180) { score += 60; reasons.push({text: `${dom}d on market`, color:'bg-danger'}); }
-  else if (dom >= 120) { score += 45; reasons.push({text: `${dom}d on market`, color:'bg-warning'}); }
-  else if (dom >= 90)  { score += 35; reasons.push({text: `${dom}d on market`, color:'bg-orange text-white'}); }
-  else if (dom >= 60)  { score += 22; reasons.push({text: `${dom}d on market`, color:'bg-info'}); }
-  else if (dom >= 30)  { score += 12; reasons.push({text: `${dom}d on market`, color:'bg-info'}); }
+  // Minutes on market weighted heavily (0-100)
+  const minutes = Number(p.minutesOnMarket ?? (Number(p.daysOnMarket||0)*24*60)) || 0;
+  const days = minutes/1440;
+  // Map days to 0..70 points (sigmoid-like)
+  const domPoints = Math.max(0, Math.min(70, Math.round(70 * (1 - Math.exp(-days/45)))));
+  if (domPoints >= 50) reasons.push({text: `${Math.round(days)}d on market`, color:'bg-danger'});
+  else if (domPoints >= 35) reasons.push({text: `${Math.round(days)}d on market`, color:'bg-warning'});
+  else if (domPoints >= 15) reasons.push({text: `${Math.round(days)}d on market`, color:'bg-info'});
+  score += domPoints;
 
+  // Price drop
   const price=Number(p.price||0);
   const original=Number(p.originalPrice||price||0);
   if(original>price&&original>0){
     const drop=(original-price)/original;
-    if(drop>0.20){score+=20; reasons.push({text:'20%+ drop', color:'bg-danger'});} 
-    else if(drop>0.10){score+=12; reasons.push({text:'10%+ drop', color:'bg-warning'});} 
+    if(drop>=0.20){score+=18; reasons.push({text:'20%+ drop', color:'bg-danger text-white'});} 
+    else if(drop>=0.10){score+=12; reasons.push({text:'10%+ drop', color:'bg-warning'});} 
   }
-  if(price>0 && price<250000){score+=10; reasons.push({text:'Under $250k', color:'bg-success text-white'});} 
 
+  // Absolute affordability boost
+  if(price>0 && price<300000){score+=8; reasons.push({text:'Under $300k', color:'bg-success text-white'});} 
+
+  // Property type signals
   const type=(p.homeType||'').toUpperCase();
-  if(/MULTI|DUPLEX|TRIPLEX|FOURPLEX/.test(type)){score+=15; reasons.push({text:'Tired Landlord', color:'bg-purple text-white'});} 
+  if(/MULTI|DUPLEX|TRIPLEX|FOURPLEX/.test(type)){score+=10; reasons.push({text:'Multi-family', color:'bg-purple text-white'});} 
 
-  const textContent=`${p.description||''} ${p.streetAddress||''}`.toLowerCase();
-  const keywords=['motivated','must sell','estate','probate','divorce','as is','fixer','tlc','power of sale','court order','relocating'];
+  // Keyword signals
+  const textContent=`${p.description||''} ${p.remarks||''} ${p.streetAddress||''}`.toLowerCase();
+  const keywords=['motivated','must sell','estate','probate','divorce','as is','as-is','fixer','tlc','power of sale','court order','relocating','handyman','needs work','needs tlc'];
   const hits=keywords.reduce((acc,kw)=>acc+(textContent.includes(kw)?1:0),0);
-  if(hits>0){score+=hits*12; reasons.push({text:`Motivated ×${hits}`, color:'bg-red text-white'});} 
+  if(hits>0){score+=Math.min(20, hits*6); reasons.push({text:`Motivated ×${hits}`, color:'bg-red text-white'});} 
 
-  score=Math.min(100, Math.round(score));
+  score = Math.max(0, Math.min(100, Math.round(score)));
   const tier=score>=90?'S':score>=75?'A':score>=60?'B':'C';
   return {score,tier,reasons};
 }
@@ -536,15 +586,22 @@ async function searchZillow(locationRaw){
   }finally{state.isProcessing=false;}
 }
 
-async function searchRedfin(regionId){
+async function searchRedfin(regionId, city, postal){
   if(state.isProcessing) return;
   state.isProcessing = true;
   const id = String(regionId||'').trim();
-  if(!id){ addMessage('bot', 'Provide a Redfin regionId. Example: <code>fetch redfin region 33_2924</code>'); state.isProcessing=false; return; }
-  addMessage('bot',`Searching Redfin region <strong>${escapeHtml(id)}</strong>...`);
+  const cityQ = String(city||'').trim();
+  const postalQ = String(postal||'').trim();
+  if(!id && !cityQ && !postalQ){ addMessage('bot', 'Provide a Redfin city or postal (or regionId). Examples: <code>fetch redfin for Calgary AB</code> · <code>fetch redfin postal T2N 1N4</code>'); state.isProcessing=false; return; }
+  const queryLabel = id ? `region ${escapeHtml(id)}` : (postalQ ? `postal ${escapeHtml(postalQ)}` : escapeHtml(cityQ));
+  addMessage('bot',`Searching Redfin: <strong>${queryLabel}</strong>...`);
   try{
     const base = getApiBase();
-    const res = await fetch(`${base}/api/redfin?regionId=${encodeURIComponent(id)}`);
+    const params = new URLSearchParams();
+    if(id) params.set('regionId', id);
+    if(cityQ) params.set('city', cityQ);
+    if(postalQ) params.set('postal', postalQ);
+    const res = await fetch(`${base}/api/redfin?${params.toString()}`);
     let json=null; try{ json = await res.json(); }catch{ json=null; }
     if(!res.ok){ const msg=(json&&json.error)||`Network error (${res.status})`; throw new Error(msg); }
     const list = (json && (json.results||json.data||json.items||[])) || [];
@@ -557,7 +614,20 @@ async function searchRedfin(regionId){
       const detail = it.detailUrl || it.url || '#';
       const beds = it.beds ?? it.bedrooms ?? it.BedroomsTotal ?? null;
       const baths = it.baths ?? it.bathrooms ?? it.BathroomsTotal ?? null;
+      // Try to derive minutes on market
+      let minutes = 0;
       const dom = Number(it.daysOnMarket ?? it.dom ?? it.daysOnZillow ?? 0) || 0;
+      if (dom>0) minutes = dom*24*60;
+      const timeStr = it.time_on_market || it.timeOnMarket || it.timeOnSite || it.time_on_site || it.days_on_market || null;
+      if (!minutes && typeof timeStr==='string') {
+        const s=timeStr.toLowerCase(); const m=s.match(/(\d+(?:\.\d+)?)/); const num=m?Number(m[1]):0;
+        if(/min|minute|mins/.test(s)) minutes=Math.round(num); else if(/hr|hour|hrs/.test(s)) minutes=Math.round(num*60); else if(/day|days/.test(s)) minutes=Math.round(num*1440);
+      }
+      if (!minutes) {
+        const listed = it.listedAt || it.listed_at || it.listingDate || it.listing_date || it.datePosted || null;
+        const ts = listed? Date.parse(listed): NaN;
+        if (!Number.isNaN(ts)) minutes = Math.max(0, Math.floor((Date.now()-ts)/60000));
+      }
       const n = {
         _id:`r_${Date.now()}_${idx}_${Math.random().toString(36).slice(2,7)}`,
         streetAddress: String(addr),
@@ -567,7 +637,7 @@ async function searchRedfin(regionId){
         bedrooms: beds,
         bathrooms: baths,
         daysOnMarket: dom,
-        minutesOnMarket: dom*24*60,
+        minutesOnMarket: minutes,
         imgSrc: img,
         homeType: it.type || it.propertyType || 'Property',
         description: it.remarks || it.description || '',
@@ -575,6 +645,18 @@ async function searchRedfin(regionId){
       };
       const sc = calculateScore(n); n.score=sc.score; n.tier=sc.tier; n.reasons=sc.reasons; return n;
     });
+    // Enrich minutes for missing ones (limit to 10) via scrape-time when detailUrl available
+    async function enrichRedfinMinutes(items, base){
+      const targets = items.filter(x=>(!x.minutesOnMarket||x.minutesOnMarket<=0) && x.detailUrl && x.detailUrl.startsWith('http')).slice(0,10);
+      if(!targets.length) return;
+      await Promise.all(targets.map(async (x)=>{
+        try{
+          const sres = await fetch(`${base}/api/redfin/scrape-time?url=${encodeURIComponent(x.detailUrl)}`);
+          if(sres.ok){ const sj = await sres.json(); if (sj && typeof sj.minutes === 'number' && sj.minutes > 0) x.minutesOnMarket = sj.minutes; }
+        }catch(_){ /* ignore */ }
+      }));
+    }
+    await enrichRedfinMinutes(normalized, base);
     state.properties = [...state.properties, ...normalized];
     state.currentPage = 1;
     saveData();
@@ -621,7 +703,13 @@ function filterAndRender(){
   const sortMode = state.sortMode;
   state.filtered=state.properties
     .filter(p=>(Number(p.score||0)>=minScore))
-    .filter(p=>!q||(String(p.streetAddress||'').toLowerCase().includes(q)||String(p.city||'').toLowerCase().includes(q)));
+    .filter(p=>{
+      if(!q) return true;
+      const addr=String(p.streetAddress||'').toLowerCase();
+      const city=String(p.city||'').toLowerCase();
+      const desc=String(p.description||p.remarks||'').toLowerCase();
+      return addr.includes(q)||city.includes(q)||desc.includes(q);
+    });
   if(sortMode==='dom_desc'){
     const minutes = p=> Number(((p.minutesOnMarket ?? (Number(p.daysOnMarket||0)*24*60)) || 0));
     state.filtered.sort((a,b)=> minutes(b) - minutes(a));
@@ -643,6 +731,8 @@ function renderTable(){
   const start = (state.currentPage - 1) * state.pageSize;
   const end = start + state.pageSize;
   const pageRows = state.filtered.slice(start, end);
+  const q=(document.getElementById('searchBox').value||'').trim().toLowerCase();
+  function hi(text){ if(!q||!text) return escapeHtml(String(text)); const s=String(text); const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'); return s.replace(re, m=>`<mark class="kw-hit">${escapeHtml(m)}</mark>`); }
   pageRows.forEach(p=>{
     const _reasons = Array.isArray(p.reasons) ? p.reasons : [];
     const _first = _reasons.slice(0, 4);
@@ -658,13 +748,13 @@ function renderTable(){
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td><img src="${escapeAttr(p.imgSrc||'')}" class="thumb" onerror="this.src='https://via.placeholder.com/300'"></td>
-      <td><strong>${escapeHtml(p.streetAddress||'')}</strong><br><small class="text-muted">${escapeHtml(p.city||'')}</small></td>
+      <td><strong>${hi(p.streetAddress||'')}</strong><br><small class="text-muted">${hi(p.city||'')}</small></td>
       <td class="text-end fw-bold">${escapeHtml(p.priceDisplay||'-')}</td>
       <td class="text-center">${escapeHtml(String(p.bedrooms??'-'))}</td>
       <td class="text-center">${escapeHtml(String(p.bathrooms??'-'))}</td>
       <td class="text-center"><strong>${escapeHtml(String(((p.minutesOnMarket ?? (Number(p.daysOnMarket||0)*24*60)) || 0).toLocaleString()))}</strong></td>
       <td class="text-center"><span class="badge score-badge" style="background:${bg}; color:${textColor}; border:${border}; box-shadow:${shadow};">${escapeHtml(String(sc))}</span></td>
-      <td><div class="d-flex flex-wrap gap-1">${reasonsHTML||'<span class="text-muted">—</span>'}</div></td>
+      <td><div class="d-flex flex-wrap gap-1">${reasonsHTML||'<span class="text-muted">—</span>'}</div>${q? `<div class="small text-muted mt-1">${hi(p.description||p.remarks||'')}</div>`:''}</td>
       <td>
         <button class="btn btn-sm btn-outline-warning me-1" onclick="prefillSimulator('${escapeAttr(p._id)}')">Sim</button>
         <button class="btn btn-sm btn-outline-primary me-1" onclick="window.open('${escapeAttr(p.detailUrl||'#')}','_blank')">View</button>
@@ -846,7 +936,9 @@ function renderLiveStats(){
   try{
     const elC=document.getElementById('stat_count');
     if(!elC) return; // stats panel not present
-    const items = state.filtered && state.filtered.length ? state.filtered : state.properties;
+    const items = (state.statsScope==='all')
+      ? state.properties
+      : (state.filtered && state.filtered.length ? state.filtered : state.properties);
     const count = items.length;
     const avgScore = count? (items.reduce((a,b)=>a+Number(b.score||0),0)/count) : 0;
     const prices = items.map(p=>Number(p.price||0)).filter(x=>x>0).sort((a,b)=>a-b);
@@ -854,10 +946,11 @@ function renderLiveStats(){
     const mins = items.map(p=>Number(p.minutesOnMarket ?? (Number(p.daysOnMarket||0)*24*60))).filter(x=>x>=0).sort((a,b)=>a-b);
     const medMins = mins.length? (mins[Math.floor(mins.length/2)]) : 0;
 
-    elC.textContent = count.toLocaleString();
-    document.getElementById('stat_avgscore').textContent = (Math.round(avgScore*10)/10).toFixed(1);
-    document.getElementById('stat_avgprice').textContent = `$${Math.round(avgPrice).toLocaleString()}`;
-    document.getElementById('stat_medmins').textContent = (medMins||0).toLocaleString();
+    // Animated counters
+    animateNumber(elC, count, v=>v.toLocaleString());
+    animateNumber(document.getElementById('stat_avgscore'), Math.round(avgScore*10)/10, v=>v.toFixed(1));
+    animateNumber(document.getElementById('stat_avgprice'), Math.round(avgPrice), v=>`$${Math.round(v).toLocaleString()}`);
+    animateNumber(document.getElementById('stat_medmins'), medMins||0, v=>Math.round(v).toLocaleString());
 
     const spark = document.getElementById('stat_spark');
     const scores = items.slice(0,50).map(p=>Number(p.score||0));
@@ -869,8 +962,136 @@ function renderLiveStats(){
       const y = 40 - (s/max)*40;
       d += (i===0?`M ${x},${y}`:` L ${x},${y}`);
     });
-    spark.innerHTML = `<path d="${d}" fill="none" stroke="#22c55e" stroke-width="2"/><circle r="3" cx="${scores.length? (scores.length-1)*step:0}" cy="${scores.length? 40-(scores[scores.length-1]/max)*40:40}" fill="#22c55e"/>`;
+    const area = d ? `${d} L 200,40 L 0,40 Z` : '';
+    spark.innerHTML = `
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#22c55e" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${area? `<path d="${area}" fill="url(#sparkGrad)" stroke="none"/>` : ''}
+      <path d="${d}" fill="none" stroke="#22c55e" stroke-width="2"/>
+      <circle r="3" cx="${scores.length? (scores.length-1)*step:0}" cy="${scores.length? 40-(scores[scores.length-1]/max)*40:40}" fill="#22c55e"/>
+    `;
+
+    // Avg Score Gauge (semi-donut 0-100)
+    const gsvg = document.getElementById('stat_gauge');
+    if (gsvg) {
+      const a = Math.max(0, Math.min(100, avgScore));
+      const pct = a/100;
+      const r = 50; const cx = 60; const cy = 60; // viewBox 120x60
+      const start = Math.PI; // 180 deg
+      const end = Math.PI * (1 - pct); // sweep left->right
+      const x0 = cx + r * Math.cos(start), y0 = cy + r * Math.sin(start);
+      const x1 = cx + r * Math.cos(end),   y1 = cy + r * Math.sin(end);
+      const large = 0; // always <= 180deg
+      const hue = Math.round((a/100)*120); // red->green
+      const track = `<path d="M ${cx-r},${cy} A ${r},${r} 0 0 1 ${cx+r},${cy}" stroke="#e5e7eb" stroke-width="10" fill="none"/>`;
+      const arc = `<path d="M ${x0},${y0} A ${r},${r} 0 ${large} 1 ${x1},${y1}" stroke="hsl(${hue},90%,45%)" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+      const tick = `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy- r - 6}" stroke="#94a3b8" stroke-width="1" opacity="0.6"/>`;
+      gsvg.innerHTML = track + arc + tick;
+    }
+
+    // Score Tiers bars
+    const tsvg = document.getElementById('stat_tiers');
+    if (tsvg) {
+      const counts = {S:0,A:0,B:0,C:0};
+      items.forEach(p=>{ const s=Number(p.score||0); if(s>=90) counts.S++; else if(s>=75) counts.A++; else if(s>=60) counts.B++; else counts.C++; });
+      const labels=[['S','#10b981'],['A','#3b82f6'],['B','#f59e0b'],['C','#ef4444']];
+      const total = Math.max(1, items.length);
+      let x=0; const w=200, h=16, gap=6; let out='';
+      labels.forEach(([lab,color],i)=>{
+        const v=counts[lab]; const ww=Math.max(1, Math.round((v/total)*w));
+        const y = i*(h+gap);
+        out += `<rect x="0" y="${y}" width="${w}" height="${h}" rx="4" fill="#e5e7eb" opacity="0.5"/>`;
+        out += `<rect x="0" y="${y}" width="${ww}" height="${h}" rx="4" fill="${color}"/>`;
+        out += `<text x="${w-2}" y="${y+h-4}" text-anchor="end" font-size="11" fill="#0f172a">${lab}: ${v}</text>`;
+      });
+      tsvg.innerHTML = out;
+    }
+
+    // Price distribution histogram (10 bins)
+    const phsvg = document.getElementById('stat_pricehist');
+    if (phsvg) {
+      const vals = prices; // already sorted
+      const n = vals.length;
+      if (n>0) {
+        const bins = 10;
+        const min = vals[0], maxp = vals[n-1];
+        const range = Math.max(1, maxp-min);
+        const counts = new Array(bins).fill(0);
+        vals.forEach(v=>{
+          const idx = Math.min(bins-1, Math.floor(((v-min)/range)*bins));
+          counts[idx]++;
+        });
+        const w=200, h=60, bw=Math.floor(w/bins)-2;
+        const maxc = Math.max(...counts,1);
+        let out='';
+        counts.forEach((c,i)=>{
+          const bh = Math.round((c/maxc)*(h-8));
+          const x = i*Math.floor(w/bins)+1;
+          const y = h - bh;
+          out += `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="#60a5fa" rx="2"/>`;
+        });
+        phsvg.innerHTML = out;
+      } else { phsvg.innerHTML = ''; }
+    }
+
+    // Top Cities list
+    const cityEl = document.getElementById('stat_topcities');
+    if (cityEl) {
+      const freq = new Map();
+      items.forEach(p=>{ const c=(p.city||'').trim(); if(!c) return; freq.set(c, (freq.get(c)||0)+1); });
+      const top = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      cityEl.innerHTML = top.map(([c,n])=>`<span class="badge bg-light text-dark border me-1 mb-1">${c} <span class="text-muted">${n}</span></span>`).join('');
+    }
+
+    // Top 5 by score
+    const top5El = document.getElementById('stat_top5');
+    if (top5El) {
+      const top5 = [...items].sort((a,b)=>Number(b.score||0)-Number(a.score||0)).slice(0,5);
+      top5El.innerHTML = top5.map(p=>{
+        const img = p.imgSrc || '';
+        const addr = (p.streetAddress||'').toString();
+        const city = (p.city||'').toString();
+        const score = Number(p.score||0);
+        const price = Number(p.price||0);
+        const url = p.detailUrl || '#';
+        const hue = Math.max(0, Math.min(120, Math.round((score/100)*120)));
+        const bg = `hsl(${hue}, 90%, 45%)`;
+        return `
+          <div class="d-flex align-items-center gap-2 p-2 rounded border">
+            <img src="${escapeAttr(img)}" class="rounded" style="width:48px;height:36px;object-fit:cover" onerror="this.src='https://via.placeholder.com/80x60'"/>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-content-between">
+                <div class="fw-semibold small">${escapeHtml(addr)}</div>
+                <a href="${escapeAttr(url)}" target="_blank" class="small text-decoration-none">View</a>
+              </div>
+              <div class="text-muted small">${escapeHtml(city)} · $${price?price.toLocaleString():'-'}</div>
+            </div>
+            <span class="badge" style="background:${bg};color:#fff">${score}</span>
+          </div>`;
+      }).join('');
+    }
   }catch(e){ console.warn('stats render failed', e); }
+}
+
+// Simple number animation utility
+function animateNumber(el, toValue, formatFn){
+  if(!el) return;
+  const parseVal = (s)=>{ const t=String(s).replace(/[^\d.\-]/g,''); const n=Number(t); return isFinite(n)?n:0; };
+  const from = parseVal(el.textContent||'0');
+  const to = Number(toValue)||0;
+  const dur = 450;
+  const start = performance.now();
+  function tick(now){
+    const p = Math.min(1, (now-start)/dur);
+    const v = from + (to-from)*(0.5 - Math.cos(p*Math.PI)/2); // easeInOut
+    el.textContent = formatFn? formatFn(v) : String(Math.round(v));
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 function parseCommand(input){
@@ -880,7 +1101,14 @@ function parseCommand(input){
   if(/redfin/.test(text)){
     const rMatch = text.match(/region\s+([\w_\-]+)/);
     const region = rMatch ? rMatch[1] : '';
-    return {action:'search_redfin', region};
+    // accept city or postal code too
+    let city = '';
+    let postal = '';
+    const cityMatch = text.match(/for\s+(.+?)(?=\s+(under|over|postal|region|$))/);
+    if(cityMatch) city = cityMatch[1].trim();
+    const postalMatch = text.match(/postal\s+([A-Za-z0-9\-\s]+)/);
+    if(postalMatch) postal = postalMatch[1].trim();
+    return {action:'search_redfin', region, city, postal};
   }
   const locMatch=text.match(/for\s+(.+?)(?=\s+(under|over|$))/)||text.match(/in\s+(.+?)(?=\s+(under|over|$))/)||text.match(/for\s+(.+)$/)||text.match(/in\s+(.+)$/);
   const location=locMatch?locMatch[1].trim():'';
@@ -896,11 +1124,11 @@ document.getElementById('sendBtn').addEventListener('click',async()=>{
   const cmd=parseCommand(text);
   if(cmd){
     if(cmd.action==='search_redfin'){
-      if(cmd.region) {
-        await searchRedfin(cmd.region);
+      if(cmd.region || cmd.city || cmd.postal) {
+        await searchRedfin(cmd.region, cmd.city, cmd.postal);
       } else {
-        addMessage('bot','Provide a Redfin region id. Example: <code>fetch redfin region 33_2924</code>');
-        toast('Use: fetch redfin region 33_2924','warning');
+        addMessage('bot','Provide a Redfin city or postal (or regionId). Examples: <code>fetch redfin for Calgary AB</code> · <code>fetch redfin postal T2N 1N4</code>');
+        toast('Use: fetch redfin for Calgary AB  |  fetch redfin postal T2N 1N4','warning');
       }
     } else if(cmd.action==='search_zillow'){
       if(cmd.location) {
@@ -920,6 +1148,12 @@ document.getElementById('cmdInput').addEventListener('keydown', e=>{if(e.key==='
 document.getElementById('clearChat').addEventListener('click',()=>{document.getElementById('chatBox').innerHTML=''; state.chat=[];});
 document.getElementById('searchBox').addEventListener('input',()=>filterAndRender());
   const msEl=document.getElementById('minScore'); if(msEl) msEl.addEventListener('change',()=>filterAndRender());
+  // Stats scope toggle
+  const scopeV=document.getElementById('statScopeVisible'); const scopeA=document.getElementById('statScopeAll');
+  if(scopeV && scopeA){
+    scopeV.addEventListener('click',()=>{ state.statsScope='visible'; scopeV.classList.add('active'); scopeA.classList.remove('active'); renderLiveStats(); });
+    scopeA.addEventListener('click',()=>{ state.statsScope='all'; scopeA.classList.add('active'); scopeV.classList.remove('active'); renderLiveStats(); });
+  }
   document.getElementById('sortSelect').addEventListener('change',(e)=>{state.sortMode=e.target.value; filterAndRender();});
   const exportBtn=document.getElementById('exportBtn'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
   const sendCarouselBtn=document.getElementById('sendCarouselBtn'); if(sendCarouselBtn) sendCarouselBtn.addEventListener('click',sendTopToCarousel);

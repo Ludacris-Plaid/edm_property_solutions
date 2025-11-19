@@ -308,10 +308,47 @@ if (strpos($path, '/api/redfin') === 0) {
     header('Content-Type: application/json');
     header('Cache-Control: no-store');
 
+    // Sub-endpoint: scrape-time
+    if (strpos($path, '/api/redfin/scrape-time') === 0) {
+        $url = isset($_GET['url']) ? trim($_GET['url']) : '';
+        if ($url === '') { http_response_code(400); echo json_encode(['error'=>'url required']); exit; }
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Safari/537.36',
+                'Accept-Language: en-US,en;q=0.9'
+            ],
+        ]);
+        $html = curl_exec($ch);
+        $err = curl_error($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($err) { http_response_code(502); echo json_encode(['error'=>'Scrape failed','details'=>$err]); exit; }
+        if (($status < 200) || ($status >= 300)) { http_response_code($status ?: 500); echo json_encode(['error'=>'Failed to load detail page']); exit; }
+        $minutes = 0;
+        // Try simple visible text like "X hours on site" or "X days" etc.
+        if (preg_match('/(\d+(?:\.\d+)?)\s*(minute|minutes|min|mins|hour|hours|hr|hrs|day|days)/i', $html, $mm)) {
+            $num = (float)$mm[1]; $unit = strtolower($mm[2]);
+            if (preg_match('/min|minute|mins/', $unit)) $minutes = (int)round($num);
+            else if (preg_match('/hr|hour|hrs/', $unit)) $minutes = (int)round($num*60);
+            else if (preg_match('/day|days/', $unit)) $minutes = (int)round($num*1440);
+        }
+        echo json_encode(['minutes' => $minutes ?: null]);
+        exit;
+    }
+
+    // Search endpoint
     $regionId = isset($_GET['regionId']) ? trim($_GET['regionId']) : '';
-    if ($regionId === '') {
+    $city = isset($_GET['city']) ? trim($_GET['city']) : '';
+    $postal = isset($_GET['postal']) ? trim($_GET['postal']) : '';
+    $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+    if ($regionId === '' && $city === '' && $postal === '' && $q === '') {
         http_response_code(400);
-        echo json_encode(['error' => 'regionId required (e.g., 33_2924)']);
+        echo json_encode(['error' => 'Provide one of: regionId, city, postal, or q']);
         exit;
     }
 
@@ -325,8 +362,12 @@ if (strpos($path, '/api/redfin') === 0) {
         exit;
     }
 
+    // Build query. Keep regionId if provided; else pass city/postal/q if supported by provider.
     $query = array_filter([
-        'regionId' => $regionId,
+        'regionId' => $regionId ?: null,
+        'city' => $city ?: null,
+        'postal' => $postal ?: null,
+        'q' => $q ?: null,
     ], fn($v) => $v !== '' && $v !== null);
 
     $url = 'https://' . $rapidHost . $rapidEndpoint . '?' . http_build_query($query);
@@ -363,7 +404,7 @@ if (strpos($path, '/api/redfin') === 0) {
         }
         if (empty($list) && isset($json[0])) $list = $json; // root array
 
-        echo json_encode(['results' => is_array($list) ? $list : []]);
+        echo json_encode(['results' => is_array($list) ? $list : [], 'meta' => ['source' => $rapidHost]]);
         exit;
     }
 
