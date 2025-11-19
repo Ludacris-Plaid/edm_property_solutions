@@ -296,6 +296,35 @@ pre, code {
     h2 { font-size: 1.75rem; }
     h3 { font-size: 1.5rem; }
 }
+
+/* Extra-small/mobile adjustments */
+@media (max-width: 576px) {
+  /* Ensure hero typewriter text is fully visible */
+  .hero-title { line-height: 1.25; }
+  .typewrite { white-space: normal; overflow: visible; display: inline; padding-right: .25rem; }
+  .typewrite::after { position: static; display: inline-block; width: 6px; height: 1em; margin-left: 2px; transform: none; }
+
+  /* Admin layout tweaks */
+  .chat-messages { height: 260px; }
+  .thumb { width: 56px; height: 40px; }
+  .card-header .d-flex { flex-wrap: wrap; }
+  #searchBox { width: 100% !important; }
+}
+
+/* Extra-small/mobile adjustments */
+@media (max-width: 576px) {
+  /* Ensure hero typewriter text is fully visible */
+  .hero-title { line-height: 1.25; }
+  .typewrite { white-space: normal; overflow: visible; display: inline; padding-right: .25rem; }
+  .typewrite::after { position: static; display: inline-block; width: 6px; height: 1em; margin-left: 2px; transform: none; }
+
+  /* Admin layout tweaks */
+  .chat-messages { height: 260px; }
+  .thumb { width: 56px; height: 40px; }
+  .card-header .d-flex { flex-wrap: wrap; }
+  #searchBox { width: 100% !important; }
+}
+
 .card.bg-gradient,
 .alert.alert-info,
 .alert.alert-primary,

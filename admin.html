@@ -92,7 +92,7 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
         <div class="card-body d-flex flex-column">
           <div id="chatBox" class="chat-messages mb-3 flex-grow-1" aria-live="polite"></div>
           <div class="input-group">
-            <input id="cmdInput" class="form-control" placeholder="fetch zillow for Edmonton AB under 400k" autocomplete="off">
+            <input id="cmdInput" class="form-control" placeholder="Try: fetch zillow for Edmonton AB under 400k  |  fetch redfin region 33_2924" autocomplete="off">
             <button id="sendBtn" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
           </div>
           <small class="text-muted mt-2">Try: <code>fetch zillow for Calgary AB under 500k 3 beds</code></small>
@@ -133,9 +133,30 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
                 </tr>
               </thead>
               <tbody id="tableBody">
-                <tr><td colspan="9" class="text-center py-5 text-muted">Type a command to load live Zillow data</td></tr>
+                <tr><td colspan="9" class="text-center py-5 text-muted">Type a command to load live data — e.g., <code>fetch zillow for Calgary AB</code> or <code>fetch redfin region 33_2924</code></td></tr>
               </tbody>
             </table>
+          </div>
+          <div class="border-top px-3 py-2 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <button id="prevPage" class="btn btn-sm btn-outline-secondary" onclick="prevPage()">Prev</button>
+              <span class="small" id="pageInfo">1 / 1</span>
+              <button id="nextPage" class="btn btn-sm btn-outline-secondary" onclick="nextPage()">Next</button>
+              <div class="d-flex align-items-center gap-2">
+                <label for="pageJump" class="small text-muted mb-0">Jump</label>
+                <input id="pageJump" type="number" min="1" class="form-control form-control-sm" style="width: 88px" placeholder="Page">
+                <button class="btn btn-sm btn-outline-primary" onclick="jumpToPageInput()">Go</button>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label for="pageSizeSelect" class="small text-muted mb-0">Page size</label>
+              <select id="pageSizeSelect" class="form-select form-select-sm" style="width: auto; min-width: 80px">
+                <option value="15" selected>15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -286,8 +307,16 @@ const state = {
   filtered: [],
   chat: [],
   isProcessing: false,
-  sortMode: 'score_desc'
+  sortMode: 'score_desc',
+  currentPage: 1,
+  pageSize: 15
 };
+
+function getApiBase(){
+  try{
+    return (window.location && window.location.protocol === 'file:') ? 'http://localhost:8000' : '';
+  }catch(_){ return ''; }
+}
 
 function calculateScore(p) {
   let score = 0;
@@ -329,7 +358,7 @@ async function searchZillow(locationRaw){
   if(!location){addMessage('bot','Include location'); state.isProcessing=false; return;}
   addMessage('bot',`Searching Zillow for: <strong>${escapeHtml(location)}</strong>...`);
   try{
-    const base = '';
+    const base = getApiBase();
     const res = await fetch(`${base}/api/zillow?location=${encodeURIComponent(location)}`);
 
     let data=null;
@@ -345,7 +374,7 @@ async function searchZillow(locationRaw){
       const city=item.city||item.cityName||item.addressCity||'';
       const price=Number(item.price||item.listPrice||0);
       const img=item.photo||item.imgSrcHighRes||item.imgSrc||item.image||'';
-      const detail=item.detailUrl||item.url||item.zpid?`https://www.zillow.com/homedetails/${item.zpid}_zpid/`:'#';
+      const detail=(item.detailUrl||item.url|| (item.zpid?`https://www.zillow.com/homedetails/${item.zpid}_zpid/`:'#'));
       // Prefer explicit time strings (e.g., "21 hours") over numeric DOM values
       const timeStr = item.time_on_zillow || item.timeOnZillow || item.timeOnSite || null;
       const numericDaysRaw = item.days_on_market ?? item.daysOnZillow ?? item.daysOnMarket ?? item.dom ?? null;
@@ -400,24 +429,26 @@ async function searchZillow(locationRaw){
         window.__mins_debug_count++;
       }
 
-      const beds = item.beds ?? item.bedrooms ?? null;
-      const baths = item.baths ?? item.bathrooms ?? null;
+      // Bedrooms/Bathrooms from common fields
+      const bedrooms = item.bedrooms ?? item.beds ?? item.bedRooms ?? null;
+      const bathrooms = item.bathrooms ?? item.baths ?? item.bathRooms ?? null;
+
       return {
         _id:`${Date.now()}_${Math.random().toString(36).slice(2,9)}`,
-        zpid: item.zpid || null,
         streetAddress: addr,
-        city: city,
-        price: price,
+        city,
+        price,
         priceDisplay: price?`$${price.toLocaleString()}`:'-',
-        originalPrice: item.originalPrice||price,
-        bedrooms: beds,
-        bathrooms: baths,
+        originalPrice: Number(item.originalPrice||price||0),
+        bedrooms,
+        bathrooms,
         daysOnMarket: domDays,
         minutesOnMarket: minutes,
         imgSrc: img,
-        homeType: item.homeType||'',
-        description: item.publicRemarks||item.description||'',
-        detailUrl: detail
+        homeType: item.homeType || item.propertyType || '',
+        description: item.publicRemarks || item.description || '',
+        detailUrl: detail,
+        zpid: item.zpid || null
       };
     });
 
@@ -494,6 +525,7 @@ async function searchZillow(locationRaw){
     await enrichMinutes(normalized, base);
 
     state.properties=[...state.properties, ...normalized];
+    state.currentPage = 1;
     saveData();
     filterAndRender();
     toast(`Loaded ${normalized.length} properties!`,'success');
@@ -502,6 +534,54 @@ async function searchZillow(locationRaw){
     addMessage('bot',`Error fetching Zillow data: ${escapeHtml(e.message||'Unknown error')}`);
     toast('Check console','danger');
   }finally{state.isProcessing=false;}
+}
+
+async function searchRedfin(regionId){
+  if(state.isProcessing) return;
+  state.isProcessing = true;
+  const id = String(regionId||'').trim();
+  if(!id){ addMessage('bot', 'Provide a Redfin regionId. Example: <code>fetch redfin region 33_2924</code>'); state.isProcessing=false; return; }
+  addMessage('bot',`Searching Redfin region <strong>${escapeHtml(id)}</strong>...`);
+  try{
+    const base = getApiBase();
+    const res = await fetch(`${base}/api/redfin?regionId=${encodeURIComponent(id)}`);
+    let json=null; try{ json = await res.json(); }catch{ json=null; }
+    if(!res.ok){ const msg=(json&&json.error)||`Network error (${res.status})`; throw new Error(msg); }
+    const list = (json && (json.results||json.data||json.items||[])) || [];
+    const normalized = list.map((it,idx)=>{
+      const addr = it.address || it.Address || it.location || it.streetAddress || '';
+      const city = it.city || (it.Address && it.Address.city) || '';
+      const priceRaw = it.price ?? it.PriceUnformattedValue ?? it.priceNum ?? it.Price ?? 0;
+      const price = Number(priceRaw)||0;
+      const img = it.imageUrl || it.img || it.imgSrc || (Array.isArray(it.photos)&&it.photos[0]?.url) || '';
+      const detail = it.detailUrl || it.url || '#';
+      const beds = it.beds ?? it.bedrooms ?? it.BedroomsTotal ?? null;
+      const baths = it.baths ?? it.bathrooms ?? it.BathroomsTotal ?? null;
+      const dom = Number(it.daysOnMarket ?? it.dom ?? it.daysOnZillow ?? 0) || 0;
+      const n = {
+        _id:`r_${Date.now()}_${idx}_${Math.random().toString(36).slice(2,7)}`,
+        streetAddress: String(addr),
+        city: String(city),
+        price,
+        priceDisplay: price?`$${price.toLocaleString()}`:'-',
+        bedrooms: beds,
+        bathrooms: baths,
+        daysOnMarket: dom,
+        minutesOnMarket: dom*24*60,
+        imgSrc: img,
+        homeType: it.type || it.propertyType || 'Property',
+        description: it.remarks || it.description || '',
+        detailUrl: detail
+      };
+      const sc = calculateScore(n); n.score=sc.score; n.tier=sc.tier; n.reasons=sc.reasons; return n;
+    });
+    state.properties = [...state.properties, ...normalized];
+    state.currentPage = 1;
+    saveData();
+    filterAndRender();
+    toast(`Loaded ${normalized.length} Redfin properties!`, 'success');
+  }catch(e){ console.error(e); addMessage('bot',`Error: ${escapeHtml(e.message||'Unknown error')}`); toast('Check console','danger'); }
+  finally{ state.isProcessing=false; }
 }
 
 function addMessage(sender, html){
@@ -548,6 +628,10 @@ function filterAndRender(){
   } else {
     state.filtered.sort((a,b)=>Number(b.score||0)-Number(a.score||0));
   }
+  // Clamp current page
+  const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+  if (state.currentPage > totalPages) state.currentPage = totalPages;
+  if (state.currentPage < 1) state.currentPage = 1;
   renderTable();
   renderLiveStats();
 }
@@ -556,8 +640,14 @@ function renderTable(){
   const tbody=document.getElementById('tableBody');
   tbody.innerHTML='';
   if(!state.filtered||state.filtered.length===0){tbody.innerHTML=`<tr><td colspan="9" class="text-center py-5 text-muted">No leads match your filters</td></tr>`;return;}
-  state.filtered.forEach(p=>{
-    const reasonsHTML=(p.reasons||[]).map(r=>`<span class="reason-tag ${r.color||''}">${escapeHtml(r.text||'')}</span>`).join(' ');
+  const start = (state.currentPage - 1) * state.pageSize;
+  const end = start + state.pageSize;
+  const pageRows = state.filtered.slice(start, end);
+  pageRows.forEach(p=>{
+    const _reasons = Array.isArray(p.reasons) ? p.reasons : [];
+    const _first = _reasons.slice(0, 4);
+    const _extra = Math.max(0, _reasons.length - 4);
+    const reasonsHTML = _first.map(r=>`<span class="reason-tag ${r.color||''}">${escapeHtml(r.text||'')}</span>`).join(' ') + (_extra ? ` <span class="reason-tag bg-secondary text-white">+${_extra} more</span>` : '');
     const sc = Number(p.score||0);
     const hue = Math.max(0, Math.min(120, Math.round((sc/100)*120))); // 0=red, 120=green
     const bg = `hsl(${hue}, 90%, 45%)`;
@@ -583,6 +673,32 @@ function renderTable(){
     `;
     tbody.appendChild(tr);
   });
+  updatePager();
+}
+
+function updatePager(){
+  const info = document.getElementById('pageInfo');
+  const prev = document.getElementById('prevPage');
+  const next = document.getElementById('nextPage');
+  const jump = document.getElementById('pageJump');
+  const total = state.filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+  if(info) info.textContent = `${state.currentPage} / ${totalPages}`;
+  if(prev) prev.disabled = (state.currentPage<=1);
+  if(next) next.disabled = (state.currentPage>=totalPages);
+  if(jump){ jump.setAttribute('max', String(totalPages)); jump.value = String(state.currentPage); }
+}
+
+function goToPage(p){ state.currentPage = Math.max(1, p); renderTable(); }
+function nextPage(){ state.currentPage += 1; renderTable(); }
+function prevPage(){ state.currentPage -= 1; renderTable(); }
+function jumpToPageInput(){
+  const input = document.getElementById('pageJump');
+  if(!input) return;
+  const totalPages = Math.max(1, Math.ceil((state.filtered?.length||0) / state.pageSize));
+  let n = Number(input.value)||1;
+  if(n < 1) n = 1; if(n > totalPages) n = totalPages;
+  state.currentPage = n; renderTable();
 }
 
 function removeLead(id){if(!confirm('Delete this lead?'))return; state.properties=state.properties.filter(x=>x._id!==id); saveData(); filterAndRender();}
@@ -760,7 +876,12 @@ function renderLiveStats(){
 function parseCommand(input){
   if(!input)return null;
   const text=input.toLowerCase().trim();
-  if(!/fetch|zillow|search/.test(text)) return null;
+  if(!/fetch|zillow|redfin|search/.test(text)) return null;
+  if(/redfin/.test(text)){
+    const rMatch = text.match(/region\s+([\w_\-]+)/);
+    const region = rMatch ? rMatch[1] : '';
+    return {action:'search_redfin', region};
+  }
   const locMatch=text.match(/for\s+(.+?)(?=\s+(under|over|$))/)||text.match(/in\s+(.+?)(?=\s+(under|over|$))/)||text.match(/for\s+(.+)$/)||text.match(/in\s+(.+)$/);
   const location=locMatch?locMatch[1].trim():'';
   return {action:'search_zillow', location};
@@ -773,8 +894,26 @@ document.getElementById('sendBtn').addEventListener('click',async()=>{
   addMessage('user',escapeHtml(text));
   inputEl.value='';
   const cmd=parseCommand(text);
-  if(cmd && cmd.location) await searchZillow(cmd.location);
-  else addMessage('bot','Try: <code>fetch zillow for Edmonton AB under 400k</code>');
+  if(cmd){
+    if(cmd.action==='search_redfin'){
+      if(cmd.region) {
+        await searchRedfin(cmd.region);
+      } else {
+        addMessage('bot','Provide a Redfin region id. Example: <code>fetch redfin region 33_2924</code>');
+        toast('Use: fetch redfin region 33_2924','warning');
+      }
+    } else if(cmd.action==='search_zillow'){
+      if(cmd.location) {
+        await searchZillow(cmd.location);
+      } else {
+        addMessage('bot','Try: <code>fetch zillow for Edmonton AB under 400k</code>');
+        toast('Use: fetch zillow for Edmonton AB under 400k','warning');
+      }
+    }
+  } else {
+    addMessage('bot','Try: <code>fetch zillow for Edmonton AB</code> or <code>fetch redfin region 33_2924</code>');
+    toast('Unknown command. Try: fetch zillow for Calgary AB  |  fetch redfin region 33_2924','warning');
+  }
 });
 
 document.getElementById('cmdInput').addEventListener('keydown', e=>{if(e.key==='Enter') document.getElementById('sendBtn').click();});
@@ -785,6 +924,8 @@ document.getElementById('searchBox').addEventListener('input',()=>filterAndRende
   const exportBtn=document.getElementById('exportBtn'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
   const sendCarouselBtn=document.getElementById('sendCarouselBtn'); if(sendCarouselBtn) sendCarouselBtn.addEventListener('click',sendTopToCarousel);
   const clearBtn=document.getElementById('clearBtn'); if(clearBtn) clearBtn.addEventListener('click',clearTable);
+  const pageSizeSel=document.getElementById('pageSizeSelect'); if(pageSizeSel){ pageSizeSel.addEventListener('change',()=>{ state.pageSize = Math.max(1, Number(pageSizeSel.value)||15); state.currentPage=1; renderTable(); }); }
+  const pageJump=document.getElementById('pageJump'); if(pageJump){ pageJump.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); jumpToPageInput(); } }); }
 
   const themeBtn=document.getElementById('themeBtn');
   const themeIcon=themeBtn?themeBtn.querySelector('i'):null;

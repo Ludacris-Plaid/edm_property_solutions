@@ -192,8 +192,7 @@ function buildSlides(items) {
               <div class="d-flex justify-content-between align-items-center">
                 <h6 class="fw-bold mb-0">${p.address || 'Property'}</h6>
                 <span class="score-badge" title="Distress Score">
-                  <i class="fas fa-heart-crack"></i>
-                  ${score} ${starsHTML(score)}
+                  ${score}
                 </span>
               </div>
               <p class="text-success small mb-1">List ${priceText}</p>
@@ -287,8 +286,7 @@ async function buildCarouselFromLeads() {
                 <div class="d-flex justify-content-between align-items-center">
                   <h6 class="fw-bold mb-0">${lead.address || 'Property'}</h6>
                   <span class="score-badge" title="Opportunity Score">
-                    <i class="fas fa-ranking-star"></i>
-                    ${score} ${starsHTML(score)}
+                    ${score}
                   </span>
                 </div>
                 <p class="text-success small mb-1">List $${price.toLocaleString()} (Local Avg $${local_avg_price.toLocaleString()})</p>

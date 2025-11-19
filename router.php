@@ -303,6 +303,75 @@ if (strpos($path, '/api/zillow-search') === 0) {
     exit;
 }
 
+// ============== API: Redfin Search Proxy (RapidAPI) ==============
+if (strpos($path, '/api/redfin') === 0) {
+    header('Content-Type: application/json');
+    header('Cache-Control: no-store');
+
+    $regionId = isset($_GET['regionId']) ? trim($_GET['regionId']) : '';
+    if ($regionId === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'regionId required (e.g., 33_2924)']);
+        exit;
+    }
+
+    $rapidKey = trim(getenv('RAPIDAPI_REDFIN_KEY') ?: (getenv('RAPIDAPI_KEY') ?: ''));
+    $rapidHost = trim(getenv('RAPIDAPI_REDFIN_HOST') ?: 'redfin-canada.p.rapidapi.com');
+    $rapidEndpoint = trim(getenv('RAPIDAPI_REDFIN_ENDPOINT') ?: '/properties/search-sale');
+
+    if ($rapidKey === '') {
+        http_response_code(500);
+        echo json_encode(['error' => 'Missing RapidAPI Redfin key']);
+        exit;
+    }
+
+    $query = array_filter([
+        'regionId' => $regionId,
+    ], fn($v) => $v !== '' && $v !== null);
+
+    $url = 'https://' . $rapidHost . $rapidEndpoint . '?' . http_build_query($query);
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => [
+            'x-rapidapi-key: ' . $rapidKey,
+            'x-rapidapi-host: ' . $rapidHost,
+            'accept: application/json'
+        ],
+    ]);
+
+    $resp = curl_exec($ch);
+    $err = curl_error($ch);
+    $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($err) {
+        http_response_code(502);
+        echo json_encode(['error' => 'RapidAPI request failed', 'detail' => $err]);
+        exit;
+    }
+
+    $json = json_decode($resp, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+        $list = [];
+        foreach (['results','data','properties','list','items'] as $k) {
+            if (isset($json[$k]) && is_array($json[$k])) { $list = $json[$k]; break; }
+        }
+        if (empty($list) && isset($json[0])) $list = $json; // root array
+
+        echo json_encode(['results' => is_array($list) ? $list : []]);
+        exit;
+    }
+
+    http_response_code($httpStatus ?: 200);
+    echo $resp;
+    exit;
+}
+
 // ============== API: Distressed Search Proxy (RapidAPI) ==============
 if (strpos($path, '/api/distressed-search') === 0) {
     header('Content-Type: application/json');
@@ -556,6 +625,25 @@ if ($path === '/contact-submit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $arr[] = $entry;
     file_put_contents($file, json_encode($arr, JSON_PRETTY_PRINT));
+
+    // Email notification
+    $to = 'dayglowgiggles@proton.me';
+    $subject = 'New Contact Message from ' . ($entry['name'] ?: 'Website');
+    $body = "New contact form submission\n\n" .
+            "Name: {$entry['name']}\n" .
+            "Email: {$entry['email']}\n" .
+            "Phone: {$entry['phone']}\n" .
+            "Time: {$entry['ts']}\n" .
+            "IP: {$entry['ip']}\n" .
+            "UA: {$entry['ua']}\n\n" .
+            "Message:\n{$entry['message']}\n";
+    $headers = [];
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: text/plain; charset=UTF-8';
+    $fromEmail = filter_var($entry['email'], FILTER_VALIDATE_EMAIL) ? $entry['email'] : 'no-reply@synapse.local';
+    $headers[] = 'From: Synapse Website <' . $fromEmail . '>';
+    @mail($to, $subject, $body, implode("\r\n", $headers));
+
     echo json_encode(['ok'=>true]);
     exit;
 }
