@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: synapse-realty
+    env: docker
+    plan: starter
+    rootDir: ./
+    disk:
+      name: contact-data
+      mountPath: /var/www/html/data
+      sizeGB: 1
+    envVars:
+      - key: RAPIDAPI_KEY
+        sync: false
+      - key: RAPIDAPI_HOST
+        value: real-time-zillow-data.p.rapidapi.com
