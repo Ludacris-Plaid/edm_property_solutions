@@ -1,7 +1,11 @@
 FROM php:8.2-apache
 
-RUN a2enmod rewrite \
- && docker-php-ext-install curl
+# Install system deps for PHP extensions, then enable Apache rewrite and build curl extension
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libcurl4-openssl-dev \
+ && a2enmod rewrite \
+ && docker-php-ext-install -j"$(nproc)" curl \
+ && rm -rf /var/lib/apt/lists/*
 
 # Harden a bit
 RUN sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
