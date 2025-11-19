@@ -107,6 +107,7 @@ body.dark-mode .badge.bg-success, body.dark-mode .reason-tag.bg-success { filter
           <h5 class="mb-0"><i class="fas fa-fire me-2 text-primary"></i>Hot Distressed Properties</h5>
           <div class="d-flex align-items-center gap-2">
             <button id="exportBtn" class="btn btn-sm btn-outline-success" title="Export visible rows to CSV"><i class="fas fa-file-csv me-1"></i>Export CSV</button>
+            <button id="sendCarouselBtn" class="btn btn-sm btn-outline-primary" title="Send top visible to homepage carousel"><i class="fas fa-photo-film me-1"></i>Send to Carousel</button>
             <button id="clearBtn" class="btn btn-sm btn-outline-danger" title="Clear all rows"><i class="fas fa-trash me-1"></i>Clear</button>
             <select id="sortSelect" class="form-select form-select-sm" style="width:180px">
               <option value="score_desc">Sort: Score (High→Low)</option>
@@ -489,6 +490,29 @@ function clearTable(){
   toast('Table cleared','success');
 }
 
+function sendTopToCarousel(){
+  try{
+    const items = (state.filtered && state.filtered.length ? state.filtered : state.properties) || [];
+    if(!items.length){ toast('No properties to send','warning'); return; }
+    const withImg = items.filter(p=>p && p.imgSrc && String(p.imgSrc).length>4);
+    if(!withImg.length){ toast('No images available for carousel','warning'); return; }
+    const top = withImg.slice(0,8);
+    const mapped = top.map(p=>({
+      address: [p.streetAddress||'', p.city||''].filter(Boolean).join(', '),
+      photos: [{ url: p.imgSrc }],
+      imageUrl: p.imgSrc,
+      price: p.priceDisplay || (Number(p.price||0) ? `$${Number(p.price).toLocaleString()}` : 'N/A'),
+      priceNum: Number(p.price||0),
+      daysOnMarket: Number(p.daysOnMarket||Math.floor((Number(p.minutesOnMarket||0))/(60*24)))||0,
+      distressScore: Number(p.score||0),
+      propertyType: p.homeType || 'Property',
+      detailUrl: p.detailUrl || '#'
+    }));
+    localStorage.setItem('eps_admin_properties', JSON.stringify(mapped));
+    toast(`Sent ${mapped.length} to homepage carousel`, 'success');
+  }catch(e){ console.warn(e); toast('Failed to send to carousel','danger'); }
+}
+
 function parseCommand(input){
   if(!input)return null;
   const text=input.toLowerCase().trim();
@@ -515,6 +539,7 @@ document.getElementById('searchBox').addEventListener('input',()=>filterAndRende
   const msEl=document.getElementById('minScore'); if(msEl) msEl.addEventListener('change',()=>filterAndRender());
   document.getElementById('sortSelect').addEventListener('change',(e)=>{state.sortMode=e.target.value; filterAndRender();});
   const exportBtn=document.getElementById('exportBtn'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
+  const sendCarouselBtn=document.getElementById('sendCarouselBtn'); if(sendCarouselBtn) sendCarouselBtn.addEventListener('click',sendTopToCarousel);
   const clearBtn=document.getElementById('clearBtn'); if(clearBtn) clearBtn.addEventListener('click',clearTable);
 
   const themeBtn=document.getElementById('themeBtn');
