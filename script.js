@@ -535,11 +535,3 @@ async function sendMessage() {
     renderChat();
 }
 
-// In your server setup
-app.get('/api/config', (req, res) => {
-  res.json({
-    // Only expose what the client needs
-    rentcastKey: process.env.RENTCAST_API_KEY ? 'configured' : undefined,
-    // Don't expose the actual keys to the client!
-  });
-});
