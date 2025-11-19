@@ -329,7 +329,7 @@ async function searchZillow(locationRaw){
   if(!location){addMessage('bot','Include location'); state.isProcessing=false; return;}
   addMessage('bot',`Searching Zillow for: <strong>${escapeHtml(location)}</strong>...`);
   try{
-    const base = (window.location && window.location.origin && window.location.origin.includes('localhost:3000')) ? '' : 'http://localhost:3000';
+    const base = '';
     const res = await fetch(`${base}/api/zillow?location=${encodeURIComponent(location)}`);
 
     let data=null;

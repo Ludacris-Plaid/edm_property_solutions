@@ -29,6 +29,149 @@ $path = rtrim($path, '/');
 if ($path === '') { $path = '/'; }
 $ext = pathinfo($path, PATHINFO_EXTENSION);
 
+// ============== API: Zillow (same-origin PHP) ==============
+if (strpos($path, '/api/zillow') === 0) {
+    header('Content-Type: application/json');
+    header('Cache-Control: no-store');
+
+    // /api/zillow/detail?zpid=...
+    if (strpos($path, '/api/zillow/detail') === 0) {
+        $zpid = isset($_GET['zpid']) ? trim($_GET['zpid']) : '';
+        if ($zpid === '') { http_response_code(400); echo json_encode(['error'=>'zpid required']); exit; }
+        $rapidKey = getenv('RAPIDAPI_KEY') ?: '';
+        $host = getenv('RAPIDAPI_HOST') ?: 'real-time-zillow-data.p.rapidapi.com';
+        if ($rapidKey === '') { http_response_code(500); echo json_encode(['error'=>'RAPIDAPI_KEY is not configured on the server']); exit; }
+        $url = 'https://' . $host . '/property?zpid=' . rawurlencode($zpid);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 25,
+            CURLOPT_HTTPHEADER => [
+                'x-rapidapi-key: ' . $rapidKey,
+                'x-rapidapi-host: ' . $host,
+                'accept: application/json'
+            ],
+        ]);
+        $resp = curl_exec($ch);
+        $err = curl_error($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($err) { http_response_code(502); echo json_encode(['error'=>'RapidAPI request failed','detail'=>$err]); exit; }
+        http_response_code($status ?: 200);
+        echo $resp;
+        exit;
+    }
+
+    // /api/zillow/scrape-time?url=...
+    if (strpos($path, '/api/zillow/scrape-time') === 0) {
+        $url = isset($_GET['url']) ? trim($_GET['url']) : '';
+        if ($url === '') { http_response_code(400); echo json_encode(['error'=>'url required']); exit; }
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0 Safari/537.36',
+                'Accept-Language: en-US,en;q=0.9'
+            ],
+        ]);
+        $html = curl_exec($ch);
+        $err = curl_error($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($err) { http_response_code(502); echo json_encode(['error'=>'Scrape failed','details'=>$err]); exit; }
+        if (($status < 200) || ($status >= 300)) { http_response_code($status ?: 500); echo json_encode(['error'=>'Failed to load detail page']); exit; }
+
+        $minutes = 0;
+        // Try __NEXT_DATA__ or shared data
+        if (preg_match('/<script[^>]*>\s*window\.__NEXT_DATA__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/', $html, $m) ||
+            preg_match('/<script[^>]*data-zrr-shared-data-key="initial-data"[^>]*>\s*(\{[\s\S]*?\})\s*<\/script>/', $html, $m)) {
+            $json = json_decode($m[1], true);
+            if (is_array($json)) {
+                $stack = [$json];
+                while ($stack) {
+                    $obj = array_pop($stack);
+                    foreach ($obj as $k => $v) {
+                        if (is_string($v) && preg_match('/time.*zillow/i', $k)) {
+                            if (preg_match('/(\d+(?:\.\d+)?)/', $v, $nm)) {
+                                $num = (int)round((float)$nm[1]);
+                                $unit = 'hour';
+                                if (preg_match('/(min|minute|mins|hr|hour|hrs|day|days)/i', $v, $um)) { $unit = strtolower($um[1]); }
+                                if (preg_match('/min|minute|mins/i', $unit)) $minutes = $num; else if (preg_match('/hr|hour|hrs/i', $unit)) $minutes = $num*60; else if (preg_match('/day|days/i', $unit)) $minutes = $num*24*60;
+                            }
+                            break 2;
+                        } elseif (is_array($v)) {
+                            $stack[] = $v;
+                        } elseif (is_object($v)) {
+                            $stack[] = (array)$v;
+                        }
+                    }
+                }
+            }
+        }
+        // Fallback: regex visible text
+        if (!$minutes && preg_match('/(\d+)\s*(minute|minutes|min|mins|hour|hours|hr|hrs|day|days)/i', $html, $mm)) {
+            $num = (int)$mm[1]; $unit = strtolower($mm[2]);
+            if (preg_match('/min|minute|mins/', $unit)) $minutes = $num; else if (preg_match('/hr|hour|hrs/', $unit)) $minutes = $num*60; else if (preg_match('/day|days/', $unit)) $minutes = $num*24*60;
+        }
+        echo json_encode(['minutes' => $minutes ?: null]);
+        exit;
+    }
+
+    // /api/zillow?location=...
+    if (strpos($path, '/api/zillow') === 0) {
+        $location = isset($_GET['location']) ? trim($_GET['location']) : '';
+        if ($location === '') { http_response_code(400); echo json_encode(['error'=>'Location required']); exit; }
+        $rapidKey = getenv('RAPIDAPI_KEY') ?: '';
+        $host = getenv('RAPIDAPI_HOST') ?: 'real-time-zillow-data.p.rapidapi.com';
+        if ($rapidKey === '') { http_response_code(500); echo json_encode(['error'=>'RAPIDAPI_KEY is not configured on the server','details'=>'Create a .env with RAPIDAPI_KEY=your_key and restart the server.']); exit; }
+
+        $params = [ 'location' => $location ];
+        $optKeys = ['home_status','sort','listing_type','beds_min','beds_max','price_min','price_max','page'];
+        foreach ($optKeys as $k) { if (isset($_GET[$k]) && $_GET[$k] !== '') { $params[$k] = $_GET[$k]; } }
+        if (!isset($params['home_status'])) $params['home_status'] = 'FOR_SALE';
+        if (!isset($params['sort'])) $params['sort'] = 'DEFAULT';
+        if (!isset($params['listing_type'])) $params['listing_type'] = 'BY_AGENT';
+
+        $url = 'https://' . $host . '/search?' . http_build_query($params);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 25,
+            CURLOPT_HTTPHEADER => [
+                'x-rapidapi-key: ' . $rapidKey,
+                'x-rapidapi-host: ' . $host,
+                'accept: application/json'
+            ],
+        ]);
+        $resp = curl_exec($ch);
+        $err = curl_error($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($err) { http_response_code(502); echo json_encode(['error'=>'RapidAPI request failed','detail'=>$err]); exit; }
+
+        // Normalize results shape
+        $json = json_decode($resp, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            $list = [];
+            foreach (['results','props','properties','data'] as $k) {
+                if (isset($json[$k]) && is_array($json[$k])) { $list = $json[$k]; break; }
+            }
+            echo json_encode(['results' => $list]);
+            exit;
+        }
+        http_response_code($status ?: 200);
+        echo $resp;
+        exit;
+    }
+}
+
 // ============== API: Zillow Search Proxy (RapidAPI) ==============
 if (strpos($path, '/api/zillow-search') === 0) {
     header('Content-Type: application/json');
